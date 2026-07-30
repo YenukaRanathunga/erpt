@@ -1,0 +1,1885 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TonerERP — Office Print Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg:        #F5F5F3;
+    --surface:   #FFFFFF;
+    --surface2:  #F0F0ED;
+    --border:    rgba(0,0,0,0.09);
+    --border2:   rgba(0,0,0,0.15);
+    --text:      #1A1A18;
+    --text2:     #6B6B67;
+    --text3:     #A0A09C;
+    --purple:    #534AB7;
+    --purple-l:  #EEEDFE;
+    --purple-d:  #3C3489;
+    --green:     #3B6D11;
+    --green-l:   #EAF3DE;
+    --red:       #A32D2D;
+    --red-l:     #FCEBEB;
+    --amber:     #854F0B;
+    --amber-l:   #FAEEDA;
+    --blue:      #185FA5;
+    --blue-l:    #E6F1FB;
+    --radius:    8px;
+    --radius-lg: 12px;
+    --shadow:    0 1px 4px rgba(0,0,0,0.07);
+    --sidebar-w: 210px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 0.5px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .sb-logo {
+    padding: 18px 16px 14px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sb-logo-icon {
+    width: 34px; height: 34px;
+    background: var(--purple-l);
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--purple);
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+  .sb-logo-title { font-size: 14px; font-weight: 600; }
+  .sb-logo-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  .sb-nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
+
+  .sb-section {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 12px 8px 5px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 2px;
+    position: relative;
+    user-select: none;
+    transition: background 0.12s;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+  .nav-item i { font-size: 16px; flex-shrink: 0; }
+  .nav-item .ni-badge {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: var(--red); color: #fff;
+    font-size: 10px; font-weight: 600;
+    padding: 1px 5px; border-radius: 8px;
+    min-width: 17px; text-align: center;
+  }
+
+  .sb-footer {
+    padding: 12px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .user-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 8px;
+    border-radius: var(--radius);
+  }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .av-admin { background: var(--purple-l); color: var(--purple-d); }
+  .av-staff { background: var(--green-l); color: var(--green); }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--text2); }
+
+  /* ── Main content ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Page header ── */
+  .page-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .page-title { font-size: 18px; font-weight: 600; }
+  .page-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .page-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ── Metric cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px; margin-bottom: 18px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+  .metric-value { font-size: 22px; font-weight: 600; }
+  .metric-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  /* ── Cards / sections ── */
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px; gap: 8px; flex-wrap: wrap;
+  }
+  .card-title { font-size: 13px; font-weight: 600; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: var(--surface);
+    cursor: pointer; font-size: 12px;
+    color: var(--text); font-family: inherit;
+    font-weight: 500;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn i { font-size: 15px; }
+
+  .btn-primary { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .btn-primary:hover { background: var(--purple-d); border-color: var(--purple-d); }
+  .btn-success { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-success:hover { background: #27500A; }
+  .btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-danger:hover { background: #791F1F; }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+  .btn-sm i { font-size: 13px; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12px; table-layout: fixed;
+  }
+  th {
+    text-align: left; font-weight: 600;
+    font-size: 10px; color: var(--text2);
+    padding: 0 10px 10px;
+    border-bottom: 0.5px solid var(--border2);
+    white-space: nowrap;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  td {
+    padding: 10px; border-bottom: 0.5px solid var(--border);
+    vertical-align: middle;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 8px;
+    font-size: 10px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-ok      { background: var(--green-l); color: #27500A; }
+  .badge-low     { background: var(--amber-l); color: var(--amber); }
+  .badge-out     { background: var(--red-l); color: var(--red); }
+  .badge-pending { background: var(--blue-l); color: var(--blue); }
+  .badge-approved{ background: var(--green-l); color: #27500A; }
+  .badge-rejected{ background: var(--red-l); color: var(--red); }
+  .badge-admin   { background: var(--purple-l); color: var(--purple-d); }
+  .badge-staff   { background: var(--green-l); color: var(--green); }
+
+  /* ── Toner number chip ── */
+  .toner-no {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    padding: 2px 7px; border-radius: 5px;
+    color: var(--text);
+  }
+
+  /* ── Alert bar ── */
+  .alert-bar {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+  .alert-success { background: var(--green-l); color: #27500A; border: 0.5px solid #C0DD97; }
+  .alert-warn    { background: var(--amber-l); color: var(--amber); border: 0.5px solid #FAC775; }
+  .alert-danger  { background: var(--red-l); color: var(--red); border: 0.5px solid #F09595; }
+
+  /* ── Forms ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .form-grid-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text2); }
+  .form-control {
+    width: 100%;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.12s;
+  }
+  .form-control:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(83,74,183,0.12); }
+  .form-control[readonly] { opacity: 0.6; background: var(--surface2); cursor: not-allowed; }
+  select.form-control { cursor: pointer; }
+  select.form-control[multiple] { min-height: 104px; }
+  .form-hint { margin-top: 3px; color: var(--text3); font-size: 10px; }
+  textarea.form-control { resize: vertical; min-height: 70px; }
+
+  /* ── Qty control ── */
+  .qty-ctrl { display: flex; align-items: center; gap: 10px; }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: var(--surface2);
+    cursor: pointer; font-size: 17px;
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s; font-family: inherit;
+  }
+  .qty-btn:hover { background: var(--border); }
+  .qty-num { font-size: 20px; font-weight: 600; min-width: 40px; text-align: center; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    width: 380px; max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    animation: slideUp 0.18s ease;
+  }
+  @keyframes slideUp { from { transform:translateY(12px); opacity:0; } to { transform:none; opacity:1; } }
+  .modal-title {
+    font-size: 14px; font-weight: 600;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-title i { font-size: 18px; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 13px;
+    margin-bottom: 13px;
+    font-size: 12px;
+  }
+  .info-box .ib-label { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .info-box .ib-value { font-size: 13px; font-weight: 500; }
+
+  /* ── Printer cards (staff view) ── */
+  .printer-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 10px; margin-bottom: 16px;
+  }
+  .printer-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .printer-card:hover { border-color: var(--purple); box-shadow: 0 2px 8px rgba(83,74,183,0.12); }
+  .printer-card.selected { border: 2px solid var(--purple); box-shadow: 0 2px 12px rgba(83,74,183,0.18); }
+  .pc-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .pc-loc { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+  .pc-count { font-size: 22px; font-weight: 600; color: var(--purple); }
+  .pc-count-label { font-size: 10px; color: var(--text3); }
+
+  /* ── Segments ── */
+  .seg {
+    display: flex; gap: 3px;
+    background: var(--surface2);
+    padding: 3px; border-radius: var(--radius);
+  }
+  .seg-btn {
+    padding: 5px 12px;
+    border-radius: 6px; border: none;
+    cursor: pointer; font-size: 11px;
+    background: transparent; color: var(--text2);
+    font-family: inherit; font-weight: 500;
+    transition: all 0.12s;
+  }
+  .seg-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* ── Search input ── */
+  .search-input {
+    padding: 7px 10px 7px 32px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 12px; font-family: inherit;
+    width: 220px;
+    transition: border-color 0.12s;
+    position: relative;
+  }
+  .search-wrap { position: relative; }
+  .search-wrap i {
+    position: absolute; left: 9px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3); font-size: 14px;
+    pointer-events: none;
+  }
+  .search-input:focus { outline: none; border-color: var(--purple); background: var(--surface); }
+
+  /* ── Color dot ── */
+  .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── History row ── */
+  .hist-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .hist-in  { background: var(--green-l); color: var(--green); }
+  .hist-out { background: var(--amber-l); color: var(--amber); }
+  .hist-new { background: var(--purple-l); color: var(--purple); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center; padding: 32px 20px;
+    color: var(--text2);
+  }
+  .empty-state i { font-size: 36px; color: var(--text3); display: block; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; }
+
+  /* ── Dashboard chart ── */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding-top: 6px; }
+  .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--purple); min-height: 6px; }
+  .bar-val { font-size: 10px; color: var(--text2); }
+  .bar-name { font-size: 10px; color: var(--text3); text-align: center; line-height: 1.3; }
+
+  /* ── Two-col layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* ── Authentication ── */
+  [hidden] { display: none !important; }
+  .login-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(83,74,183,.14), transparent 32%),
+      radial-gradient(circle at 85% 80%, rgba(24,95,165,.10), transparent 30%),
+      var(--bg);
+  }
+  .login-card {
+    width: min(420px, 100%);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(26,26,24,.12);
+    padding: 28px;
+  }
+  .login-brand { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+  .login-brand .sb-logo-icon { width:42px; height:42px; font-size:20px; }
+  .login-title { font-size:20px; font-weight:600; }
+  .login-sub { color:var(--text2); font-size:12px; margin-top:2px; }
+  .login-form { display:grid; gap:14px; }
+  .login-section-title { font-size:12px; font-weight:600; margin-bottom:10px; }
+  .login-divider { display:flex; align-items:center; gap:10px; color:var(--text3); font-size:10px; margin:18px 0; text-transform:uppercase; letter-spacing:.08em; }
+  .login-divider::before, .login-divider::after { content:""; height:1px; background:var(--border); flex:1; }
+  .login-error { min-height:18px; color:var(--red); font-size:12px; }
+  .login-submit { width:100%; justify-content:center; height:40px; }
+  .logout-btn { margin-left:auto; border:0; background:transparent; color:var(--text2); cursor:pointer; padding:6px; border-radius:6px; }
+  .logout-btn:hover { background:var(--surface2); color:var(--red); }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sidebar { width: 0; overflow: hidden; }
+    .main { margin-left: 0; padding: 14px; }
+    .two-col { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid-full { grid-column: 1; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<section class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="sb-logo-icon"><i class="ti ti-printer"></i></div>
+      <div><div class="login-title">Welcome to TonerERP</div><div class="login-sub">Choose your staff profile or sign in as administrator</div></div>
+    </div>
+    <div class="login-section-title">Staff access</div>
+    <form class="login-form" id="staffLoginForm">
+      <div class="form-group">
+        <label class="form-label" for="staffUser">Your name</label>
+        <select class="form-control" id="staffUser" required><option value="">Loading staff…</option></select>
+      </div>
+      <div class="login-error" id="staffLoginError" role="alert"></div>
+      <button class="btn btn-primary login-submit" id="staffLoginBtn" type="submit"><i class="ti ti-user"></i> Continue as staff</button>
+    </form>
+    <div class="login-divider">Administrator</div>
+    <form class="login-form" id="adminLoginForm">
+      <div class="form-group">
+        <label class="form-label" for="adminName">Admin name</label>
+        <input class="form-control" id="adminName" autocomplete="username" required value="admin">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="adminPassword">Password</label>
+        <input class="form-control" id="adminPassword" type="password" autocomplete="current-password" required placeholder="Enter admin password">
+      </div>
+      <div class="login-error" id="loginError" role="alert"></div>
+      <button class="btn login-submit" id="adminLoginBtn" type="submit"><i class="ti ti-shield-check"></i> Sign in as admin</button>
+    </form>
+  </div>
+</section>
+
+<div class="app" id="erpApp" hidden>
+
+  <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon"><i class="ti ti-printer"></i></div>
+      <div>
+        <div class="sb-logo-title">TonerERP</div>
+        <div class="sb-logo-sub">Print management</div>
+      </div>
+    </div>
+
+    <nav class="sb-nav" id="sbNav"></nav>
+
+    <div class="sb-footer">
+      <div class="user-row">
+        <div class="avatar av-admin" id="uAvatar">AD</div>
+        <div>
+          <div class="user-name" id="uName">Admin User</div>
+          <div class="user-role" id="uRole">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out" aria-label="Sign out"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+  <main class="main" id="mainArea">
+
+    <div id="alertArea"></div>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard"></div>
+
+    <!-- TONER STOCK -->
+    <div class="page" id="page-stock"></div>
+
+    <!-- PRINTERS -->
+    <div class="page" id="page-printers"></div>
+
+    <!-- PRINTER TONER HISTORY -->
+    <div class="page" id="page-printerhistory"></div>
+
+    <!-- ALL REQUESTS (admin) -->
+    <div class="page" id="page-requests"></div>
+
+    <!-- USERS -->
+    <div class="page" id="page-users"></div>
+    <div class="page" id="page-emailsetup"></div>
+
+    <!-- MY PRINTERS (staff) -->
+    <div class="page" id="page-myprinters"></div>
+
+    <!-- MY REQUESTS (staff) -->
+    <div class="page" id="page-myrequests"></div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════ MODAL CONTAINER ═══════════════════════════ -->
+<div id="modalContainer"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+var S = {
+  role: null,
+  page: 'dashboard',
+  stockView: 'stock',
+  stockSearch: '',
+  historyPrinter: 'all',
+  historyFrom: '',
+  historyTo: '',
+  selPrinter: null,
+  rcvQty: 1,
+  currentUser: null,
+  printers: [], toners: [], requests: [], stockHistory: [], users: [],
+  emailConfig: { supportEmail: '', enabled: false }
+};
+
+function safeText(value) {
+  return String(value == null ? '' : value).replace(/[&<>'"]/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[ch];
+  });
+}
+
+async function api(path, options) {
+  if (window.location.protocol === 'file:') {
+    throw new Error('Do not open index.html directly. Close this tab and run Start TonerERP.bat.');
+  }
+  options = options || {};
+  options.headers = Object.assign({'Content-Type':'application/json','X-TonerERP-Request':'1'}, options.headers || {});
+  var res = await fetch(path, options);
+  var data = await res.json().catch(function(){ return {}; });
+  if (res.status === 404 && path.indexOf('/api/') === 0) {
+    throw new Error('Online API not found. Upload the api and lib folders, then redeploy Vercel.');
+  }
+  if (!res.ok) throw new Error(data.error || 'Request failed.');
+  return data;
+}
+
+function applyServerState(data) {
+  S.role = data.user.role;
+  S.currentUser = data.user;
+  S.printers = data.state.printers || [];
+  S.toners = data.state.toners || [];
+  S.requests = data.state.requests || [];
+  S.stockHistory = data.state.stockHistory || [];
+  S.users = data.state.users || [data.user];
+  S.emailConfig = data.state.emailConfig || { supportEmail:'', enabled:false };
+}
+
+async function refreshState() {
+  var data = await api('/api/state');
+  applyServerState(data);
+  return data;
+}
+
+async function runAction(action, payload) {
+  var data = await api('/api/action', { method:'POST', body:JSON.stringify({ action:action, payload:payload || {} }) });
+  applyServerState(data);
+  renderNav(); renderPage();
+  return data;
+}
+
+async function bootApp() {
+  try {
+    await refreshState();
+    document.getElementById('loginScreen').hidden = true;
+    document.getElementById('erpApp').hidden = false;
+    var u = S.currentUser;
+    document.getElementById('uAvatar').textContent = u.avatar || u.name.slice(0,2).toUpperCase();
+    document.getElementById('uAvatar').className = 'avatar ' + (u.role === 'admin' ? 'av-admin' : 'av-staff');
+    document.getElementById('uName').textContent = u.name;
+    document.getElementById('uRole').textContent = u.role === 'admin' ? 'Administrator' : 'Staff · ' + (u.dept || 'Office');
+    S.page = u.role === 'admin' ? 'dashboard' : 'myprinters';
+    renderNav(); renderPage();
+  } catch (err) {
+    document.getElementById('loginScreen').hidden = false;
+    document.getElementById('erpApp').hidden = true;
+    await loadStaffUsers();
+  }
+}
+
+async function loadStaffUsers() {
+  var select = document.getElementById('staffUser');
+  var error = document.getElementById('staffLoginError');
+  try {
+    var data = await api('/api/staff-users');
+    select.innerHTML = data.users.map(function(user) {
+      return '<option value="' + user.id + '">' + safeText(user.name) + ' · ' + safeText(user.dept || 'Office') + '</option>';
+    }).join('') || '<option value="">No staff accounts available</option>';
+    select.disabled = !data.users.length;
+    document.getElementById('staffLoginBtn').disabled = !data.users.length;
+    error.textContent = data.users.length ? '' : 'Ask the administrator to add a staff account.';
+  } catch (_) {
+    select.innerHTML = '<option value="">Staff list unavailable</option>';
+    select.disabled = true;
+    document.getElementById('staffLoginBtn').disabled = true;
+    error.textContent = 'Online database/API unavailable. Check the Vercel deployment settings.';
+  }
+}
+
+document.getElementById('staffLoginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var btn = document.getElementById('staffLoginBtn');
+  var error = document.getElementById('staffLoginError');
+  var userId = Number(document.getElementById('staffUser').value);
+  if (!userId) { error.textContent = 'Please select your name.'; return; }
+  btn.disabled = true; error.textContent = '';
+  try { await api('/api/staff-login', { method:'POST', body:JSON.stringify({ userId:userId }) }); await bootApp(); }
+  catch (err) { error.textContent = err.message; }
+  finally { btn.disabled = false; }
+});
+
+document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var btn = document.getElementById('adminLoginBtn');
+  var error = document.getElementById('loginError');
+  btn.disabled = true; error.textContent = '';
+  try {
+    await api('/api/admin-login', { method:'POST', body:JSON.stringify({ username:document.getElementById('adminName').value, password:document.getElementById('adminPassword').value }) });
+    document.getElementById('adminPassword').value = '';
+    await bootApp();
+  } catch (err) { error.textContent = err.message; }
+  finally { btn.disabled = false; }
+});
+
+async function doLogout() {
+  try { await api('/api/logout', { method:'POST', body:'{}' }); } catch (_) {}
+  document.getElementById('erpApp').hidden = true;
+  document.getElementById('loginScreen').hidden = false;
+  await loadStaffUsers();
+  document.getElementById('staffUser').focus();
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function today() { return new Date().toISOString().slice(0,10); }
+
+function nextTonerNo() {
+  var nums = S.toners.map(t => parseInt(t.tonerNo.replace('TNR-','')));
+  return 'TNR-' + ((nums.length ? Math.max(...nums) : 0) + 1).toString().padStart(4,'0');
+}
+
+function reqId(id) { return '#REQ-' + id.toString().padStart(3,'0'); }
+
+function pendingCount() { return S.requests.filter(r => r.status === 'pending').length; }
+function alertCount()   { return S.toners.filter(t => t.qty === 0 || t.qty < t.minQty).length; }
+
+function stockBadge(t) {
+  if (t.qty === 0)          return '<span class="badge badge-out">Out of stock</span>';
+  if (t.qty < t.minQty)    return '<span class="badge badge-low">Low</span>';
+  return '<span class="badge badge-ok">In stock</span>';
+}
+
+function qtyColor(t) {
+  if (t.qty === 0)       return '#A32D2D';
+  if (t.qty < t.minQty) return '#854F0B';
+  return 'var(--text)';
+}
+
+// ─────────────────────────────────────────────
+//  NAV CONFIG
+// ─────────────────────────────────────────────
+var ADMIN_NAV = [
+  { sec: 'Overview' },
+  { id:'dashboard',  icon:'ti-layout-dashboard', label:'Dashboard'     },
+  { sec: 'Warehouse' },
+  { id:'stock',      icon:'ti-building-warehouse', label:'Toner stock', badge:'alert' },
+  { sec: 'Printers' },
+  { id:'printers',   icon:'ti-printer',           label:'Printers'     },
+  { id:'printerhistory', icon:'ti-report',         label:'Toner history'},
+  { sec: 'Requests' },
+  { id:'requests',   icon:'ti-clipboard-list',    label:'All requests', badge:'pending' },
+  { sec: 'Settings' },
+  { id:'users',      icon:'ti-users',             label:'User accounts'},
+  { id:'emailsetup', icon:'ti-mail-cog',          label:'Email settings'},
+];
+
+var STAFF_NAV = [
+  { sec: 'My workspace' },
+  { id:'myprinters',  icon:'ti-printer',        label:'Printers'      },
+  { id:'myrequests',  icon:'ti-clipboard-list', label:'My requests'   },
+];
+
+// ─────────────────────────────────────────────
+//  NAV RENDER
+// ─────────────────────────────────────────────
+function renderNav() {
+  var items = S.role === 'admin' ? ADMIN_NAV : STAFF_NAV;
+  var pend = pendingCount();
+  var alerts = alertCount();
+  var html = '';
+  items.forEach(function(n) {
+    if (n.sec) { html += '<div class="sb-section">' + n.sec + '</div>'; return; }
+    var badge = '';
+    if (n.badge === 'pending' && pend > 0) badge = '<span class="ni-badge">' + pend + '</span>';
+    if (n.badge === 'alert'   && alerts > 0) badge = '<span class="ni-badge">' + alerts + '</span>';
+    html += '<div class="nav-item' + (S.page === n.id ? ' active' : '') + '" onclick="goPage(\'' + n.id + '\')">' +
+            '<i class="ti ' + n.icon + '"></i>' + n.label + badge + '</div>';
+  });
+  document.getElementById('sbNav').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+//  PAGE NAV
+// ─────────────────────────────────────────────
+function goPage(id) {
+  var allowed = S.role === 'admin'
+    ? ['dashboard','stock','printers','printerhistory','requests','users','emailsetup']
+    : ['myprinters','myrequests'];
+  if (allowed.indexOf(id) === -1) { showAlert('You do not have permission to open that page.', 'danger'); return; }
+  S.page = id;
+  S.selPrinter = null;
+  renderNav();
+  renderPage();
+}
+
+// ─────────────────────────────────────────────
+//  ALERT
+// ─────────────────────────────────────────────
+var _alertTimer;
+function showAlert(msg, type) {
+  var area = document.getElementById('alertArea');
+  var icons = { success:'ti-check', warn:'ti-alert-triangle', danger:'ti-circle-x' };
+  if (type === 'error') type = 'danger';
+  area.textContent = '';
+  var bar = document.createElement('div');
+  bar.className = 'alert-bar alert-' + type;
+  var icon = document.createElement('i');
+  icon.className = 'ti ' + (icons[type] || 'ti-info-circle');
+  var text = document.createElement('span');
+  text.textContent = msg;
+  bar.appendChild(icon); bar.appendChild(text); area.appendChild(bar);
+  clearTimeout(_alertTimer);
+  _alertTimer = setTimeout(function() { area.innerHTML = ''; }, 3500);
+}
+
+// ─────────────────────────────────────────────
+//  RENDER PAGE
+// ─────────────────────────────────────────────
+function renderPage() {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var el = document.getElementById('page-' + S.page);
+  if (!el) return;
+  el.classList.add('active');
+
+  if (S.page === 'dashboard')  renderDashboard();
+  if (S.page === 'stock')      renderStock();
+  if (S.page === 'printers')   renderPrinters();
+  if (S.page === 'printerhistory') renderPrinterHistory();
+  if (S.page === 'requests')   renderRequests(false);
+  if (S.page === 'users')      renderUsers();
+  if (S.page === 'emailsetup') renderEmailSetup();
+  if (S.page === 'myprinters') renderMyPrinters();
+  if (S.page === 'myrequests') renderRequests(true);
+}
+
+// ─────────────────────────────────────────────
+//  DASHBOARD
+// ─────────────────────────────────────────────
+function renderDashboard() {
+  var totalQty   = S.toners.reduce(function(a,t){ return a+t.qty; }, 0);
+  var outToners  = S.toners.filter(function(t){ return t.qty === 0; });
+  var lowToners  = S.toners.filter(function(t){ return t.qty > 0 && t.qty < t.minQty; });
+  var pend       = pendingCount();
+  var prints     = S.printers.reduce(function(a,p){ return a+p.month; }, 0);
+
+  // stock alerts list
+  var alertRows = [].concat(
+    outToners.map(function(t) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)">' +
+        '<div><div style="font-weight:500">' + t.tonerNo + ' — ' + t.name + ' ' + t.model + '</div>' +
+        '<div style="font-size:11px;color:var(--text2)">' + t.compatible + '</div></div>' +
+        '<span class="badge badge-out">Out of stock</span></div>';
+    }),
+    lowToners.map(function(t) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)">' +
+        '<div><div style="font-weight:500">' + t.tonerNo + ' — ' + t.name + ' ' + t.model + '</div>' +
+        '<div style="font-size:11px;color:var(--text2)">' + t.compatible + '</div></div>' +
+        '<span class="badge badge-low">' + t.qty + ' left</span></div>';
+    })
+  ).join('') || '<div style="font-size:12px;color:var(--text2);padding:8px 0"><i class="ti ti-circle-check" style="color:var(--green)"></i> All toners are sufficiently stocked</div>';
+
+  // recent requests
+  var recReqs = S.requests.slice(-4).reverse().map(function(r) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)">' +
+      '<div><div style="font-weight:500">' + r.tonerName + '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + r.user + ' · ' + r.printer + '</div></div>' +
+      '<span class="badge badge-' + r.status + '">' + r.status + '</span></div>';
+  }).join('');
+
+  // bar chart
+  var maxP = Math.max.apply(null, S.printers.map(function(p){ return p.month; }).concat([1]));
+  var bars = S.printers.map(function(p) {
+    var h = Math.round(p.month / maxP * 64);
+    return '<div class="bar-item">' +
+      '<div class="bar-val">' + p.month.toLocaleString() + '</div>' +
+      '<div class="bar-fill" style="height:' + h + 'px"></div>' +
+      '<div class="bar-name">' + p.name.split(' ').slice(0,2).join(' ') + '</div>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('page-dashboard').innerHTML =
+    '<div class="page-header"><div><div class="page-title">Dashboard</div><div class="page-sub">Office overview — ' + today() + '</div></div></div>' +
+
+    '<div class="metric-grid">' +
+      '<div class="metric-card"><div class="metric-label">Total cartridges</div><div class="metric-value">' + totalQty + '</div><div class="metric-sub">In warehouse</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Out of stock</div><div class="metric-value" style="color:var(--red)">' + outToners.length + '</div><div class="metric-sub">Zero units</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Low stock</div><div class="metric-value" style="color:var(--amber)">' + lowToners.length + '</div><div class="metric-sub">Below minimum</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Pending requests</div><div class="metric-value" style="color:var(--blue)">' + pend + '</div><div class="metric-sub">Awaiting action</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Prints this month</div><div class="metric-value">' + prints.toLocaleString() + '</div><div class="metric-sub">All printers</div></div>' +
+    '</div>' +
+
+    '<div class="two-col">' +
+      '<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-alert-triangle" style="font-size:14px;color:var(--amber);margin-right:5px"></i>Stock alerts</span></div>' + alertRows + '</div>' +
+      '<div class="card"><div class="card-header"><span class="card-title"><i class="ti ti-clipboard-list" style="font-size:14px;color:var(--blue);margin-right:5px"></i>Recent requests</span></div>' + recReqs + '</div>' +
+    '</div>' +
+
+    '<div class="card"><div class="card-header"><span class="card-title">Monthly prints by printer</span></div>' +
+      '<div class="bar-chart">' + bars + '</div>' +
+    '</div>';
+}
+
+// ─────────────────────────────────────────────
+//  TONER STOCK
+// ─────────────────────────────────────────────
+function renderStock() {
+  var q = S.stockSearch.toLowerCase();
+  var list = S.toners.filter(function(t) {
+    return !q || t.tonerNo.toLowerCase().includes(q) || t.name.toLowerCase().includes(q) ||
+      t.model.toLowerCase().includes(q) || t.brand.toLowerCase().includes(q) ||
+      t.compatible.toLowerCase().includes(q);
+  });
+
+  var totalQty = S.toners.reduce(function(a,t){ return a+t.qty; }, 0);
+  var low = S.toners.filter(function(t){ return t.qty>0 && t.qty<t.minQty; }).length;
+  var out = S.toners.filter(function(t){ return t.qty===0; }).length;
+
+  var rows = list.map(function(t) {
+    return '<tr>' +
+      '<td><span class="toner-no">' + t.tonerNo + '</span></td>' +
+      '<td><div style="display:flex;align-items:center;gap:7px">' +
+        '<div class="color-dot" style="background:' + t.color + '"></div>' +
+        '<div><div style="font-weight:500">' + t.name + '</div>' +
+        '<div style="font-size:10px;color:var(--text2)">' + t.brand + ' · ' + t.model + '</div></div></div></td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + (t.compatible || '—') + '</td>' +
+      '<td><span style="font-size:17px;font-weight:600;color:' + qtyColor(t) + '">' + t.qty + '</span>' +
+        '<span style="font-size:10px;color:var(--text3);margin-left:5px">/ min ' + t.minQty + '</span></td>' +
+      '<td>' + stockBadge(t) + '</td>' +
+      '<td><div style="display:flex;gap:4px">' +
+        '<button class="btn btn-success btn-sm" onclick="openModal(\'receive\',' + t.id + ')"><i class="ti ti-circle-plus"></i>Receive</button>' +
+        '<button class="btn btn-sm" onclick="openModal(\'issue\',' + t.id + ')" ' + (t.qty===0?'disabled':'') + '><i class="ti ti-arrow-bar-right"></i>Issue</button>' +
+        '<button class="btn btn-sm" onclick="openModal(\'edit-toner\',' + t.id + ')"><i class="ti ti-edit"></i></button>' +
+        '<button class="btn btn-sm" onclick="deleteToner(' + t.id + ')"><i class="ti ti-trash"></i></button>' +
+      '</div></td></tr>';
+  }).join('') || '<tr><td colspan="6"><div class="empty-state"><i class="ti ti-package"></i><p>No toners found</p></div></td></tr>';
+
+  var hist = S.stockHistory.slice().reverse().map(function(h) {
+    var cls = h.type==='in'?'hist-in': h.type==='new'?'hist-new':'hist-out';
+    var icon = h.type==='in'?'ti-circle-plus': h.type==='new'?'ti-package':'ti-arrow-bar-right';
+    var label = h.type==='in' ? '+'+h.qty+' received' : h.type==='new' ? 'New toner added' : '-'+h.qty+' issued';
+    return '<div class="hist-row">' +
+      '<div class="hist-icon ' + cls + '"><i class="ti ' + icon + '"></i></div>' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:12px">' + label + ' — ' + h.desc + '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + h.note + ' · ' + h.by + '</div></div>' +
+      '<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;color:var(--text2)">' + h.date + '</div>' +
+      '<span class="toner-no" style="font-size:10px">' + h.tonerNo + '</span></div></div>';
+  }).join('') || '<div class="empty-state"><i class="ti ti-history"></i><p>No history yet</p></div>';
+
+  var isStock = S.stockView === 'stock';
+
+  document.getElementById('page-stock').innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title"><i class="ti ti-building-warehouse" style="font-size:16px;margin-right:6px;color:var(--purple)"></i>Toner warehouse</div>' +
+      '<div class="page-sub">Manage stock · receive new deliveries · issue to printers</div></div>' +
+      '<div class="page-actions">' +
+        '<div class="seg">' +
+          '<button class="seg-btn' + (isStock?' active':'') + '" onclick="S.stockView=\'stock\';renderPage()"><i class="ti ti-package"></i> Stock</button>' +
+          '<button class="seg-btn' + (!isStock?' active':'') + '" onclick="S.stockView=\'history\';renderPage()"><i class="ti ti-history"></i> History</button>' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="openModal(\'add-toner\',0)"><i class="ti ti-plus"></i>New toner</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="metric-grid">' +
+      '<div class="metric-card"><div class="metric-label">Toner types</div><div class="metric-value">' + S.toners.length + '</div><div class="metric-sub">Registered</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total units</div><div class="metric-value">' + totalQty + '</div><div class="metric-sub">In warehouse</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Low stock</div><div class="metric-value" style="color:var(--amber)">' + low + '</div><div class="metric-sub">Below minimum</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Out of stock</div><div class="metric-value" style="color:var(--red)">' + out + '</div><div class="metric-sub">Zero units</div></div>' +
+    '</div>' +
+
+    (isStock ?
+      '<div class="card">' +
+        '<div class="card-header"><span class="card-title">All toners</span>' +
+          '<div class="search-wrap"><i class="ti ti-search"></i>' +
+            '<input class="search-input" placeholder="Search by toner no, model, printer…" oninput="S.stockSearch=this.value;renderPage()" value="' + S.stockSearch + '">' +
+          '</div>' +
+        '</div>' +
+        '<div class="table-wrap"><table>' +
+          '<colgroup><col style="width:100px"><col style="width:175px"><col style="width:155px"><col style="width:80px"><col style="width:95px"><col></colgroup>' +
+          '<thead><tr><th>Toner no.</th><th>Color / model</th><th>Compatible printer</th><th>Qty</th><th>Status</th><th>Actions</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>' +
+      '</div>'
+    :
+      '<div class="card"><div class="card-header"><span class="card-title">Stock history</span>' +
+        '<span style="font-size:11px;color:var(--text2)">' + S.stockHistory.length + ' entries</span></div>' +
+        hist + '</div>'
+    );
+}
+
+// ─────────────────────────────────────────────
+//  PRINTER TONER HISTORY & REPORTS
+// ─────────────────────────────────────────────
+function filteredPrinterHistory() {
+  return S.stockHistory.filter(function(h) {
+    if (h.type !== 'out' || !h.printer) return false;
+    if (S.historyPrinter !== 'all' && h.printer !== S.historyPrinter) return false;
+    if (S.historyFrom && h.date < S.historyFrom) return false;
+    if (S.historyTo && h.date > S.historyTo) return false;
+    return true;
+  }).slice().reverse();
+}
+
+function setHistoryFilter(field, value) {
+  S[field] = value;
+  renderPrinterHistory();
+}
+
+function renderPrinterHistory() {
+  var list = filteredPrinterHistory();
+  var totalUnits = list.reduce(function(sum, h){ return sum + Number(h.qty || 0); }, 0);
+  var printerNames = [];
+  S.printers.forEach(function(p) { if (printerNames.indexOf(p.name) === -1) printerNames.push(p.name); });
+  S.stockHistory.forEach(function(h) { if (h.printer && printerNames.indexOf(h.printer) === -1) printerNames.push(h.printer); });
+  var printerOpts = '<option value="all">All printers</option>' + printerNames.map(function(name) {
+    return '<option value="' + safeText(name) + '"' + (S.historyPrinter === name ? ' selected' : '') + '>' + safeText(name) + '</option>';
+  }).join('');
+  var rows = list.map(function(h, index) {
+    return '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td>' + safeText(h.date) + '</td>' +
+      '<td><div style="font-weight:500">' + safeText(h.printer) + '</div></td>' +
+      '<td><span class="toner-no">' + safeText(h.tonerNo) + '</span><div style="font-size:11px;color:var(--text2);margin-top:3px">' + safeText(h.desc) + '</div></td>' +
+      '<td>' + Number(h.qty || 0) + '</td>' +
+      '<td>' + safeText(h.by || '—') + '</td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + safeText(h.note || '—') + '</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="7"><div class="empty-state"><i class="ti ti-history"></i><p>No toner replacements found for this filter</p></div></td></tr>';
+
+  document.getElementById('page-printerhistory').innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title"><i class="ti ti-report" style="font-size:16px;margin-right:6px;color:var(--purple)"></i>Printer toner history</div>' +
+      '<div class="page-sub">Toner replacements recorded for each office printer</div></div>' +
+      '<div class="page-actions">' +
+        '<button class="btn" onclick="downloadPrinterHistoryCsv()"' + (list.length ? '' : ' disabled') + '><i class="ti ti-file-spreadsheet"></i>Export CSV</button>' +
+        '<button class="btn btn-primary" onclick="printPrinterHistory()"' + (list.length ? '' : ' disabled') + '><i class="ti ti-printer"></i>Print / Save PDF</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="metric-grid">' +
+      '<div class="metric-card"><div class="metric-label">Replacements</div><div class="metric-value">' + list.length + '</div><div class="metric-sub">Matching this report</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Toner units</div><div class="metric-value">' + totalUnits + '</div><div class="metric-sub">Issued to printers</div></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="card-header" style="gap:10px;flex-wrap:wrap">' +
+        '<span class="card-title">Report filters</span>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
+          '<select class="form-control" aria-label="Filter by printer" style="width:280px" onchange="setHistoryFilter(\'historyPrinter\',this.value)">' + printerOpts + '</select>' +
+          '<input class="form-control" aria-label="From date" title="From date" style="width:145px" type="date" value="' + safeText(S.historyFrom) + '" onchange="setHistoryFilter(\'historyFrom\',this.value)">' +
+          '<input class="form-control" aria-label="To date" title="To date" style="width:145px" type="date" value="' + safeText(S.historyTo) + '" onchange="setHistoryFilter(\'historyTo\',this.value)">' +
+        '</div>' +
+      '</div>' +
+      '<div class="table-wrap"><table>' +
+        '<thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Toner</th><th>Qty</th><th>Changed by</th><th>Note</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+function csvCell(value) {
+  var text = String(value == null ? '' : value);
+  if (/^[=+@-]/.test(text)) text = "'" + text;
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
+function downloadPrinterHistoryCsv() {
+  var list = filteredPrinterHistory();
+  if (!list.length) return;
+  var lines = [['Date','Printer','Toner No.','Toner','Qty','Changed by','Note']].concat(list.map(function(h) {
+    return [h.date,h.printer,h.tonerNo,h.desc,h.qty,h.by,h.note];
+  })).map(function(row) { return row.map(csvCell).join(','); });
+  var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url; link.download = 'printer-toner-history-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+}
+
+function printPrinterHistory() {
+  var list = filteredPrinterHistory();
+  if (!list.length) return;
+  var rows = list.map(function(h, index) {
+    return '<tr><td>' + (index + 1) + '</td><td>' + safeText(h.date) + '</td><td>' + safeText(h.printer) + '</td><td>' + safeText(h.tonerNo + ' · ' + h.desc) + '</td><td>' + Number(h.qty || 0) + '</td><td>' + safeText(h.by || '—') + '</td><td>' + safeText(h.note || '—') + '</td></tr>';
+  }).join('');
+  var reportWindow = window.open('', '_blank', 'width=1100,height=750');
+  if (!reportWindow) { alert('Please allow the report window in your browser.'); return; }
+  reportWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Printer toner history</title><style>body{font-family:Arial,sans-serif;color:#17171a;padding:28px}h1{font-size:22px;margin:0 0 5px}.meta{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccc;padding:7px;text-align:left;vertical-align:top}th{background:#f1f1f5}tfoot td{font-weight:bold}@page{size:landscape;margin:12mm}</style></head><body><h1>TonerERP — Printer toner history</h1><div class="meta">Generated: ' + safeText(new Date().toLocaleString()) + ' · Records: ' + list.length + '</div><table><thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Toner</th><th>Qty</th><th>Changed by</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>');
+  reportWindow.document.close();
+  reportWindow.focus();
+  setTimeout(function(){ reportWindow.print(); }, 250);
+}
+
+// ─────────────────────────────────────────────
+//  PRINTERS
+// ─────────────────────────────────────────────
+function renderPrinters() {
+  var rows = S.printers.map(function(p) {
+    return '<tr>' +
+      '<td><div style="font-weight:500">' + p.name + '</div></td>' +
+      '<td><span style="font-size:11px;color:var(--text2)"><i class="ti ti-map-pin" style="font-size:11px;margin-right:3px"></i>' + p.location + '</span></td>' +
+      '<td>' + p.total.toLocaleString() + '</td>' +
+      '<td><strong>' + p.month.toLocaleString() + '</strong></td>' +
+      '<td><span class="toner-no">' + p.toner + '</span></td>' +
+      '<td><div style="display:flex;gap:4px">' +
+        '<button class="btn btn-sm" onclick="openModal(\'log-prints\',' + p.id + ')"><i class="ti ti-plus"></i>Log</button>' +
+        '<button class="btn btn-sm" onclick="openModal(\'edit-printer\',' + p.id + ')"><i class="ti ti-edit"></i>Edit</button>' +
+        '<button class="btn btn-sm" onclick="deletePrinter(' + p.id + ')"><i class="ti ti-trash"></i></button>' +
+      '</div></td></tr>';
+  }).join('') || '<tr><td colspan="6"><div class="empty-state"><i class="ti ti-printer"></i><p>No printers added yet</p></div></td></tr>';
+
+  document.getElementById('page-printers').innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title">Printers</div><div class="page-sub">All registered office printers</div></div>' +
+      '<button class="btn btn-primary" onclick="openModal(\'add-printer\',0)"><i class="ti ti-plus"></i>Add printer</button>' +
+    '</div>' +
+    '<div class="card"><div class="table-wrap"><table>' +
+      '<colgroup><col style="width:180px"><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:120px"><col></colgroup>' +
+      '<thead><tr><th>Printer</th><th>Location</th><th>Total prints</th><th>This month</th><th>Toner model</th><th>Actions</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table></div></div>';
+}
+
+// ─────────────────────────────────────────────
+//  REQUESTS
+// ─────────────────────────────────────────────
+function renderRequests(myOnly) {
+  var list = myOnly
+    ? S.requests.filter(function(r){ return r.uid === S.currentUser.id; })
+    : S.requests;
+
+  var rows = list.slice().reverse().map(function(r) {
+    var actions = '';
+    if (!myOnly && r.status === 'pending') {
+      actions = '<div style="display:flex;gap:4px">' +
+        '<button class="btn btn-success btn-sm" onclick="openModal(\'approve\',' + r.id + ')"><i class="ti ti-check"></i>Approve</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="rejectRequest(' + r.id + ')"><i class="ti ti-x"></i>Reject</button>' +
+        '</div>';
+    } else {
+      actions = '<span style="font-size:11px;color:var(--text3)">—</span>';
+    }
+    return '<tr>' +
+      '<td><span style="font-size:10px;color:var(--text2);font-weight:600">' + reqId(r.id) + '</span></td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + r.printer + '</td>' +
+      (!myOnly ? '<td>' + r.user + '</td>' : '') +
+      '<td><span style="font-size:13px;font-weight:600;color:var(--purple)">' + (r.printCount ? r.printCount.toLocaleString() : '—') + '</span></td>' +
+      '<td>' + (r.tonerNo ? '<span class="toner-no">' + r.tonerNo + '</span>' : '<span style="font-size:11px;color:var(--text3);font-style:italic">pending</span>') + '</td>' +
+      '<td style="font-size:11px;color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis">' + (r.note || '—') + '</td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + r.date + '</td>' +
+      '<td><span class="badge badge-' + r.status + '">' + r.status + '</span></td>' +
+      '<td>' + actions + '</td></tr>';
+  }).join('') || '<tr><td colspan="' + (!myOnly?9:8) + '"><div class="empty-state"><i class="ti ti-clipboard-list"></i><p>No requests yet</p></div></td></tr>';
+
+  var pid = myOnly ? 'page-myrequests' : 'page-requests';
+  document.getElementById(pid).innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title">' + (myOnly ? 'My requests' : 'All requests') + '</div>' +
+      '<div class="page-sub">' + (myOnly ? 'Your toner requests' : 'All staff toner requests') + '</div></div>' +
+      (myOnly ? '<button class="btn btn-primary" onclick="openModal(\'new-request\',0)"><i class="ti ti-plus"></i>New request</button>' : '') +
+    '</div>' +
+    '<div class="card"><div class="table-wrap"><table>' +
+      '<colgroup><col style="width:65px"><col style="width:150px">' +
+        (!myOnly ? '<col style="width:120px">' : '') +
+        '<col style="width:90px"><col style="width:90px"><col style="width:120px"><col style="width:85px"><col style="width:75px"><col></colgroup>' +
+      '<thead><tr><th>#</th><th>Printer</th>' +
+        (!myOnly ? '<th>Staff</th>' : '') +
+        '<th>Print count</th><th>Toner no.</th><th>Note</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table></div></div>';
+}
+
+// ─────────────────────────────────────────────
+//  USERS
+// ─────────────────────────────────────────────
+function renderUsers() {
+  var rows = S.users.map(function(u) {
+    var reqCount = S.requests.filter(function(r){ return r.uid === u.id; }).length;
+    return '<tr>' +
+      '<td><div style="display:flex;align-items:center;gap:8px">' +
+        '<div class="avatar ' + (u.role==='admin'?'av-admin':'av-staff') + '" style="width:26px;height:26px;font-size:9px">' + u.avatar + '</div>' +
+        '<span style="font-weight:500">' + u.name + '</span></div></td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + u.email + '</td>' +
+      '<td><span class="badge badge-' + u.role + '">' + u.role + '</span></td>' +
+      '<td>' + u.dept + '</td>' +
+      '<td>' + reqCount + '</td>' +
+      '<td>' + (u.id !== 1 ? '<button class="btn btn-sm" onclick="deleteUser(' + u.id + ')"><i class="ti ti-trash"></i></button>' : '') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('page-users').innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title">User accounts</div><div class="page-sub">Manage staff access</div></div>' +
+      '<button class="btn btn-primary" onclick="openModal(\'add-user\',0)"><i class="ti ti-plus"></i>Add user</button>' +
+    '</div>' +
+    '<div class="card"><div class="table-wrap"><table>' +
+      '<thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Requests</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table></div></div>';
+}
+
+// ─────────────────────────────────────────────
+//  MY PRINTERS (staff)
+// ─────────────────────────────────────────────
+function renderMyPrinters() {
+  var sel = S.selPrinter;
+
+  var cards = S.printers.map(function(p) {
+    var isSel = sel && sel.id === p.id;
+    return '<div class="printer-card' + (isSel?' selected':'') + '" onclick="selectPrinter(' + p.id + ')">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
+        '<div class="pc-name">' + p.name + '</div>' +
+        (isSel ? '<i class="ti ti-circle-check" style="color:var(--purple);font-size:17px"></i>' : '') +
+      '</div>' +
+      '<div class="pc-loc"><i class="ti ti-map-pin" style="font-size:11px;margin-right:3px"></i>' + p.location + '</div>' +
+      '<div class="pc-count">' + p.month.toLocaleString() + '</div>' +
+      '<div class="pc-count-label">prints this month</div>' +
+    '</div>';
+  }).join('');
+
+  var detail = '';
+  if (sel) {
+    var myReqs = S.requests.filter(function(r){ return r.uid === S.currentUser.id && r.printer === sel.name; }).slice().reverse();
+    var rrows = myReqs.map(function(r) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)">' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">' +
+            '<span style="font-size:10px;font-weight:600;color:var(--text2)">' + reqId(r.id) + '</span>' +
+            (r.tonerNo ? '<span class="toner-no">' + r.tonerNo + '</span>' : '<span style="font-size:11px;color:var(--text3);font-style:italic">toner pending</span>') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--text2)">' +
+            '<i class="ti ti-printer" style="font-size:11px;margin-right:3px"></i>' +
+            'Print count: <strong>' + (r.printCount ? r.printCount.toLocaleString() : '—') + '</strong>' +
+            ' · ' + r.date +
+            (r.note ? ' · <em>' + r.note + '</em>' : '') +
+          '</div>' +
+        '</div>' +
+        '<span class="badge badge-' + r.status + '">' + r.status + '</span></div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text2);padding:8px 0">No requests for this printer yet</div>';
+
+    detail =
+      '<div class="card">' +
+        '<div class="card-header">' +
+          '<span class="card-title"><i class="ti ti-printer" style="font-size:14px;margin-right:5px;color:var(--purple)"></i>' + sel.name + '</span>' +
+          '<button class="btn btn-primary" onclick="openModal(\'new-request\',' + sel.id + ')"><i class="ti ti-plus"></i>Request toner</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-bottom:14px;border-bottom:0.5px solid var(--border);margin-bottom:14px">' +
+          '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Location</div><div style="font-weight:500;margin-top:3px">' + sel.location + '</div></div>' +
+          '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">This month</div><div style="font-weight:500;margin-top:3px">' + sel.month.toLocaleString() + ' prints</div></div>' +
+          '<div><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Toner model</div><div style="font-weight:500;margin-top:3px">' + sel.toner + '</div></div>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:10px">My requests for this printer</div>' +
+        rrows +
+      '</div>';
+  } else {
+    detail = '<div class="empty-state" style="padding:24px"><i class="ti ti-arrow-up" style="font-size:28px"></i><p>Select a printer above to view details and request toner</p></div>';
+  }
+
+  document.getElementById('page-myprinters').innerHTML =
+    '<div class="page-header"><div><div class="page-title">Printers</div><div class="page-sub">Select a printer to request toner</div></div></div>' +
+    '<div class="printer-cards">' + cards + '</div>' +
+    detail;
+}
+
+function selectPrinter(id) {
+  S.selPrinter = S.printers.find(function(p){ return p.id === id; });
+  renderMyPrinters();
+}
+
+// ─────────────────────────────────────────────
+//  EMAIL SETUP PAGE  (simple mailto — no API needed)
+// ─────────────────────────────────────────────
+function renderEmailSetup() {
+  var cfg = S.emailConfig;
+  var hasEmail = cfg.supportEmail && cfg.supportEmail.length > 0;
+
+  var statusBadge = hasEmail
+    ? '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-l);color:var(--green);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600"><i class="ti ti-circle-check"></i>Active — ' + cfg.supportEmail + '</div>'
+    : '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--amber-l);color:var(--amber);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600"><i class="ti ti-alert-triangle"></i>IT support email not set</div>';
+
+  document.getElementById('page-emailsetup').innerHTML =
+    '<div class="page-header">' +
+      '<div><div class="page-title"><i class="ti ti-mail" style="font-size:16px;margin-right:6px;color:var(--purple)"></i>Email settings</div>' +
+      '<div class="page-sub">When a user submits a toner request, their email app opens automatically with the request pre-filled — ready to send in one click.</div></div>' +
+      statusBadge +
+    '</div>' +
+
+    '<div style="max-width:540px;display:flex;flex-direction:column;gap:16px">' +
+
+      '<div class="card">' +
+        '<div class="card-header"><span class="card-title"><i class="ti ti-mail-forward" style="color:var(--purple);font-size:13px;margin-right:5px"></i>IT Support email address</span></div>' +
+        '<div style="padding:16px;display:flex;flex-direction:column;gap:12px">' +
+          '<div style="font-size:12px;color:var(--text2)">Every toner request will open the user\'s email app (Outlook / Gmail / etc.) pre-filled with all details, addressed to this email.</div>' +
+          fgf('IT Support email', '<input class="form-control" id="es_support" type="email" placeholder="itsupport@yourcompany.com" value="' + (cfg.supportEmail||'') + '" style="font-size:14px">') +
+          '<button class="btn btn-primary" onclick="saveEmailConfig()" style="align-self:flex-start;margin-top:4px"><i class="ti ti-device-floppy"></i>Save email</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card">' +
+        '<div class="card-header"><span class="card-title"><i class="ti ti-info-circle" style="color:var(--blue);font-size:13px;margin-right:5px"></i>How it works</span></div>' +
+        '<div style="padding:14px 16px">' +
+          '<div style="display:flex;flex-direction:column;gap:10px">' +
+            howStep('1', 'ti-user', 'Staff fills in the toner request form and clicks Submit request') +
+            howStep('2', 'ti-mail-forward', 'Their email app opens automatically with all details already filled in') +
+            howStep('3', 'ti-send', 'Staff clicks Send — email goes straight to IT Support') +
+            howStep('4', 'ti-tools', 'IT Support receives the request and assigns a toner') +
+          '</div>' +
+          '<div style="margin-top:14px;padding:10px 12px;background:var(--blue-l);border-radius:var(--radius);font-size:11px;color:var(--blue)">' +
+            '<i class="ti ti-circle-check" style="margin-right:5px"></i><b>No setup needed.</b> Works with Outlook, Gmail, Apple Mail, or any email app installed on the computer.' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      (hasEmail ?
+        '<div class="card">' +
+          '<div class="card-header"><span class="card-title"><i class="ti ti-eye" style="color:var(--text2);font-size:13px;margin-right:5px"></i>Preview email</span></div>' +
+          '<div style="padding:16px">' +
+            '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;font-size:12px;font-family:monospace;line-height:1.8;border:1px solid var(--border)">' +
+              '<b>To:</b> ' + cfg.supportEmail + '<br>' +
+              '<b>Subject:</b> [TonerERP] Toner Request — &lt;Printer Name&gt; · &lt;Location&gt;<br>' +
+              '<b>Body:</b><br>' +
+              'Hi IT Support,<br><br>' +
+              'A toner request has been submitted. Please review and assign a toner.<br><br>' +
+              '• <b>Requested by:</b> &lt;User Name&gt; (&lt;user@company.com&gt;)<br>' +
+              '• <b>Printer:</b> &lt;Printer Name&gt; — &lt;Location&gt;<br>' +
+              '• <b>Print count this month:</b> &lt;count&gt;<br>' +
+              '• <b>Note:</b> &lt;user note&gt;<br>' +
+              '• <b>Date:</b> &lt;today&gt;<br><br>' +
+              'This email was auto-generated by TonerERP.' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      : '') +
+
+    '</div>';
+}
+
+function howStep(n, icon, text) {
+  return '<div style="display:flex;align-items:flex-start;gap:10px">' +
+    '<div style="width:24px;height:24px;border-radius:50%;background:var(--purple-l);color:var(--purple);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + n + '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;padding-top:3px">' +
+      '<i class="ti ' + icon + '" style="font-size:13px;color:var(--text2)"></i>' +
+      '<span style="font-size:12px;color:var(--text2)">' + text + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+async function saveEmailConfig() {
+  var sup = (document.getElementById('es_support').value||'').trim();
+  if (!sup || !sup.includes('@')) { showAlert('Please enter a valid email address.', 'error'); return; }
+  try { await runAction('email:save', { supportEmail:sup }); showAlert('IT support email saved.', 'success'); }
+  catch (err) { showAlert(err.message, 'danger'); }
+}
+
+async function disableEmail() {
+  try { await runAction('email:disable'); showAlert('Email notifications disabled.', 'success'); }
+  catch (err) { showAlert(err.message, 'danger'); }
+}
+
+// ─────────────────────────────────────────────
+//  SEND REQUEST EMAIL  (mailto — zero config)
+// ─────────────────────────────────────────────
+function sendTonerRequestEmail(req, printer) {
+  var cfg = S.emailConfig;
+  if (!cfg.enabled || !cfg.supportEmail) return;
+
+  var subject = '[TonerERP] Toner Request — ' + printer.name + ' · ' + printer.location;
+  var body =
+    'Hi IT Support,\n\n' +
+    'A toner request has been submitted. Please review and assign a toner.\n\n' +
+    '• Requested by: ' + req.user + ' (' + S.currentUser.email + ')\n' +
+    '• Printer: ' + printer.name + ' — ' + printer.location + '\n' +
+    '• Toner model: ' + (printer.toner || 'Unknown') + '\n' +
+    '• Print count this month: ' + req.printCount.toLocaleString() + '\n' +
+    '• Note: ' + (req.note || '—') + '\n' +
+    '• Request ID: REQ-' + String(req.id).padStart(4,'0') + '\n' +
+    '• Date: ' + req.date + '\n\n' +
+    'This email was auto-generated by TonerERP.';
+
+  var mailto = 'mailto:' + encodeURIComponent(cfg.supportEmail) +
+    '?cc=' + encodeURIComponent(S.currentUser.email) +
+    '&subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(body);
+
+  window.location.href = mailto;
+}
+
+// ─────────────────────────────────────────────
+//  MODAL SYSTEM
+// ─────────────────────────────────────────────
+var _modalType = null;
+var _modalId   = null;
+
+function openModal(type, id) {
+  var staffAllowed = ['new-request'];
+  if (S.role !== 'admin' && staffAllowed.indexOf(type) === -1) {
+    showAlert('Administrator permission is required.', 'danger');
+    return;
+  }
+  _modalType = type;
+  _modalId   = id;
+  S.rcvQty   = 1;
+  buildModal();
+}
+
+function closeModal() {
+  _modalType = null;
+  _modalId   = null;
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+function tonerNameOptions(selectedName) {
+  var names = ['Black', 'Cyan', 'Magenta', 'Yellow'];
+  S.toners.forEach(function(t) {
+    var name = String(t.name || '').trim();
+    if (name && names.indexOf(name) === -1) names.push(name);
+  });
+  var selected = selectedName || 'Black';
+  if (selected && names.indexOf(selected) === -1) names.push(selected);
+  return names.map(function(name) {
+    return '<option value="' + safeText(name) + '"' + (name === selected ? ' selected' : '') + '>' + safeText(name) + '</option>';
+  }).join('');
+}
+
+function compatiblePrinterOptions(selectedValue) {
+  var selected = String(selectedValue || '').split('|').map(function(name) { return name.trim(); }).filter(Boolean);
+  var printers = [];
+  S.printers.forEach(function(p) {
+    var name = String(p.name || '').trim();
+    if (!name) return;
+    var existing = printers.find(function(item) { return item.name === name; });
+    if (existing) {
+      if (p.location && existing.locations.indexOf(p.location) === -1) existing.locations.push(p.location);
+    } else {
+      printers.push({ name:name, locations:p.location ? [p.location] : [] });
+    }
+  });
+  selected.forEach(function(name) {
+    if (!printers.some(function(item) { return item.name === name; })) printers.push({ name:name, locations:[] });
+  });
+  return printers.map(function(item) {
+    return '<option value="' + safeText(item.name) + '"' + (selected.indexOf(item.name) !== -1 ? ' selected' : '') + '>' + safeText(item.name) + '</option>';
+  }).join('');
+}
+
+function selectedPrinterCompatibility() {
+  var select = document.getElementById('f_compat');
+  if (!select) return '';
+  return Array.prototype.filter.call(select.options, function(option) { return option.selected; })
+    .map(function(option) { return option.value; })
+    .join(' | ');
+}
+
+function buildModal() {
+  var html = '';
+
+  if (_modalType === 'add-toner' || _modalType === 'edit-toner') {
+    var isEdit = _modalType === 'edit-toner';
+    var t = isEdit ? S.toners.find(function(x){ return x.id === _modalId; }) : {};
+    var newNo = isEdit ? t.tonerNo : nextTonerNo();
+
+    html = modal(
+      (isEdit ? 'ti-edit' : 'ti-package') + '" style="color:var(--purple)',
+      isEdit ? 'Edit toner' : 'Add new toner',
+      '<div class="form-grid">' +
+        fg('Toner number', '<input class="form-control" id="f_no" value="' + newNo + '"' + (isEdit?' readonly':'') + '>') +
+        fg('Color / name', '<select class="form-control" id="f_name">' + tonerNameOptions(t.name || 'Black') + '</select>') +
+        fg('Brand', '<input class="form-control" id="f_brand" placeholder="e.g. Brother" value="' + (t.brand||'') + '">') +
+        fg('Model number', '<input class="form-control" id="f_model" placeholder="e.g. TN-2380" value="' + (t.model||'') + '">') +
+        fgf('Compatible printer(s)', '<select class="form-control" id="f_compat" multiple size="4">' + compatiblePrinterOptions(t.compatible || '') + '</select><div class="form-hint">Choose one printer, or hold Ctrl to choose more than one.</div>') +
+        fg(isEdit ? 'Qty' : 'Opening qty', '<input class="form-control" id="f_qty" type="number" min="0" value="' + (t.qty||0) + '">') +
+        fg('Min. qty alert', '<input class="form-control" id="f_min" type="number" min="1" value="' + (t.minQty||1) + '">') +
+      '</div>',
+      (isEdit
+        ? '<button class="btn btn-primary" onclick="doEditToner()"><i class="ti ti-check"></i>Save changes</button>'
+        : '<button class="btn btn-primary" onclick="doAddToner()"><i class="ti ti-check"></i>Add toner</button>')
+    );
+  }
+
+  else if (_modalType === 'receive' || _modalType === 'issue') {
+    var isReceive = _modalType === 'receive';
+    var t = S.toners.find(function(x){ return x.id === _modalId; });
+    var newQty = isReceive ? t.qty + S.rcvQty : t.qty - S.rcvQty;
+    var issuePrinters = isReceive ? [] : S.printers.filter(function(p){ return tonerMatchesPrinter(t, p.name); });
+    var issuePrinterOpts = issuePrinters.map(function(p) {
+      return '<option value="' + p.id + '">' + safeText(p.name) + '</option>';
+    }).join('');
+
+    html = modal(
+      (isReceive ? 'ti-truck-delivery" style="color:var(--green)' : 'ti-arrow-bar-right" style="color:var(--amber)'),
+      isReceive ? 'Receive stock' : 'Issue toner',
+      '<div class="info-box">' +
+        '<div class="ib-label">Toner</div>' +
+        '<div class="ib-value">' + t.name + ' — ' + t.model + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">' +
+          '<span class="toner-no">' + t.tonerNo + '</span>' +
+          '<span style="font-size:12px;color:var(--text2)">' + (isReceive ? 'Current stock: ' : 'Available: ') + '<strong>' + t.qty + '</strong></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-grid">' +
+        fgf('Quantity ' + (isReceive ? 'received' : 'to issue'),
+          '<div class="qty-ctrl">' +
+            '<button class="qty-btn" onclick="adjQty(-1)">−</button>' +
+            '<span class="qty-num" id="qtyDisplay">' + S.rcvQty + '</span>' +
+            '<button class="qty-btn" onclick="adjQty(1)">+</button>' +
+          '</div>'
+        ) +
+        (isReceive ? '' : fgf('Printer', '<select class="form-control" id="f_issue_printer">' + issuePrinterOpts + '</select>')) +
+        fgf(isReceive ? 'Delivery / PO note' : 'Issued to / note',
+          '<input class="form-control" id="f_note" placeholder="' + (isReceive ? 'e.g. PO-114, supplier delivery' : 'e.g. Replaced empty toner') + '">'
+        ) +
+      '</div>' +
+      '<div class="info-box" id="qtyPreview" style="margin-top:4px">' +
+        (isReceive
+          ? 'New stock after receiving: <strong>' + t.qty + ' + ' + S.rcvQty + ' = <span id="qtySum">' + newQty + '</span></strong>'
+          : 'Stock after issuing: <strong>' + t.qty + ' − ' + S.rcvQty + ' = <span id="qtySum">' + newQty + '</span></strong>'
+        ) +
+      '</div>',
+      (isReceive
+        ? '<button class="btn btn-success" onclick="doReceive()"><i class="ti ti-circle-plus"></i>Add to stock</button>'
+        : '<button class="btn btn-danger" onclick="doIssue()"' + (issuePrinters.length ? '' : ' disabled') + '><i class="ti ti-arrow-bar-right"></i>Issue toner</button>')
+    );
+  }
+
+  else if (_modalType === 'approve') {
+    var r = S.requests.find(function(x){ return x.id === _modalId; });
+    // build toner options compatible with this printer
+    var compatToners = S.toners.filter(function(x){ return tonerMatchesPrinter(x, r.printer); });
+    var allToners    = S.toners;
+    var tonerList    = compatToners.length ? compatToners : allToners;
+    var tonerOpts    = tonerList.map(function(t) {
+      return '<option value="' + t.tonerNo + '">' + t.tonerNo + ' · ' + t.name + ' ' + t.model + ' (' + t.qty + ' in stock)</option>';
+    }).join('') || '<option value="">No toners in warehouse</option>';
+    html = modal(
+      'ti-check" style="color:var(--green)',
+      'Approve request',
+      '<div class="info-box">' +
+        '<div class="ib-label">Request ' + reqId(r.id) + ' · ' + r.printer + '</div>' +
+        '<div class="ib-value">Requested by ' + r.user + '</div>' +
+        (r.printCount ? '<div style="font-size:12px;color:var(--text2);margin-top:4px"><i class="ti ti-printer" style="font-size:12px;margin-right:3px"></i>Print count reported: <strong>' + r.printCount.toLocaleString() + '</strong> this month</div>' : '') +
+        (r.note ? '<div style="font-size:11px;color:var(--text2);margin-top:3px;font-style:italic">Note: ' + r.note + '</div>' : '') +
+      '</div>' +
+      '<div class="form-grid">' +
+        fgf('Assign toner cartridge',
+          '<select class="form-control" id="f_approve_toner" onchange="updateApproveStock(this)">' + tonerOpts + '</select>' +
+          '<div style="margin-top:6px;font-size:12px;color:var(--text2)" id="approve_stock_hint">' +
+            (tonerList.length ? 'Stock: <strong style="color:' + (tonerList[0].qty > 0 ? 'var(--green)' : 'var(--red)') + '">' + tonerList[0].qty + ' units</strong>' + (tonerList[0].qty > 0 ? ' — 1 will be deducted on approval' : ' — cannot approve, no stock') : 'No toners available') +
+          '</div>'
+        ) +
+      '</div>',
+      '<button class="btn btn-success" id="approveBtn" onclick="doApprove(' + r.id + ')"><i class="ti ti-check"></i>Approve &amp; deduct stock</button>'
+    );
+  }
+
+  else if (_modalType === 'new-request') {
+    var preselPrinter = _modalId ? S.printers.find(function(p){ return p.id === _modalId; }) : S.printers[0];
+    var printerOpts = S.printers.map(function(p) {
+      return '<option value="' + p.id + '"' + (preselPrinter && p.id === preselPrinter.id ? ' selected' : '') + '>' + p.name + ' — ' + p.location + '</option>';
+    }).join('');
+    var firstPrinter = preselPrinter || S.printers[0];
+    var curMonth = firstPrinter ? firstPrinter.month : 0;
+    html = modal(
+      'ti-clipboard-list" style="color:var(--purple)',
+      'New toner request',
+      '<div class="form-grid">' +
+        fgf('Printer', '<select class="form-control" id="f_printer" onchange="updatePrintCount(this)">' + printerOpts + '</select>') +
+        fgf('Current print count (this month)',
+          '<input class="form-control" id="f_printcount" type="number" min="0" value="' + curMonth + '" placeholder="e.g. 1240">' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:4px" id="f_printcount_hint">Logged count for this printer: <strong>' + curMonth.toLocaleString() + '</strong></div>'
+        ) +
+        fgf('Note (optional)', '<input class="form-control" id="f_note" placeholder="e.g. Toner very low, printing faded">') +
+      '</div>' +
+      '<div style="background:var(--blue-l);border:0.5px solid #B5D4F4;border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:12px;color:var(--blue)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:5px"></i>Admin will assign the correct toner cartridge and approve your request.</div>',
+      '<button class="btn btn-primary" onclick="doNewRequest()"><i class="ti ti-send"></i>Submit request</button>'
+    );
+  }
+
+  else if (_modalType === 'add-printer') {
+    html = modal(
+      'ti-printer" style="color:var(--purple)',
+      'Add printer',
+      '<div class="form-grid">' +
+        fgf('Printer name', '<input class="form-control" id="f_pname" placeholder="e.g. HP LaserJet 400">') +
+        fg('Location', '<input class="form-control" id="f_ploc" placeholder="e.g. 2nd Floor">') +
+        fg('Toner model', '<input class="form-control" id="f_ptoner" placeholder="e.g. TN-2380">') +
+      '</div>',
+      '<button class="btn btn-primary" onclick="doAddPrinter()"><i class="ti ti-check"></i>Add printer</button>'
+    );
+  }
+
+  else if (_modalType === 'edit-printer') {
+    var ep = S.printers.find(function(x){ return x.id === _modalId; });
+    html = modal(
+      'ti-edit" style="color:var(--purple)',
+      'Edit printer',
+      '<div class="form-grid">' +
+        fgf('Printer name', '<input class="form-control" id="f_pname" value="' + ep.name + '">') +
+        fg('Location',      '<input class="form-control" id="f_ploc"  value="' + ep.location + '">') +
+        fg('Toner model',   '<input class="form-control" id="f_ptoner" value="' + (ep.toner||'') + '">') +
+        fg('This month prints', '<input class="form-control" id="f_pmonth" type="number" min="0" value="' + ep.month + '">') +
+        fg('Total prints',  '<input class="form-control" id="f_ptotal" type="number" min="0" value="' + ep.total + '">') +
+      '</div>',
+      '<button class="btn btn-primary" onclick="doEditPrinter()"><i class="ti ti-check"></i>Save changes</button>'
+    );
+  }
+
+  else if (_modalType === 'log-prints') {
+    var p = S.printers.find(function(x){ return x.id === _modalId; });
+    S.rcvQty = 100;
+    html = modal(
+      'ti-plus',
+      'Log prints — ' + p.name,
+      '<div class="form-grid">' +
+        fgf('Number of prints to add',
+          '<div class="qty-ctrl">' +
+            '<button class="qty-btn" onclick="adjQty(-10)">−</button>' +
+            '<span class="qty-num" id="qtyDisplay">' + S.rcvQty + '</span>' +
+            '<button class="qty-btn" onclick="adjQty(10)">+</button>' +
+          '</div>'
+        ) +
+      '</div>',
+      '<button class="btn btn-primary" onclick="doLogPrints(' + p.id + ')"><i class="ti ti-check"></i>Log</button>'
+    );
+  }
+
+  else if (_modalType === 'add-user') {
+    html = modal(
+      'ti-user-plus" style="color:var(--purple)',
+      'Add user',
+      '<div class="form-grid">' +
+        fg('Full name', '<input class="form-control" id="f_uname" placeholder="Full name">') +
+        fg('Department', '<input class="form-control" id="f_udept" placeholder="e.g. Finance">') +
+        fgf('Email', '<input class="form-control" id="f_uemail" type="email" placeholder="name@office.lk">') +
+      '</div>',
+      '<button class="btn btn-primary" onclick="doAddUser()"><i class="ti ti-check"></i>Add user</button>'
+    );
+  }
+
+  document.getElementById('modalContainer').innerHTML = html;
+}
+
+// Modal template
+function modal(iconStyle, title, body, confirmBtn) {
+  return '<div class="modal-overlay" onclick="handleOverlayClick(event)">' +
+    '<div class="modal">' +
+      '<div class="modal-title"><i class="ti ' + iconStyle + '"></i>' + title + '</div>' +
+      body +
+      '<div class="modal-footer">' +
+        '<button class="btn" onclick="closeModal()">Cancel</button>' +
+        confirmBtn +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function handleOverlayClick(e) {
+  if (e.target.classList.contains('modal-overlay')) closeModal();
+}
+
+// Form helpers
+function fg(label, input) {
+  return '<div class="form-group"><label class="form-label">' + label + '</label>' + input + '</div>';
+}
+function fgf(label, input) {
+  return '<div class="form-group form-grid-full"><label class="form-label">' + label + '</label>' + input + '</div>';
+}
+
+// ─────────────────────────────────────────────
+//  QTY CONTROL
+// ─────────────────────────────────────────────
+function adjQty(delta) {
+  S.rcvQty = Math.max(0, S.rcvQty + delta);
+  var el = document.getElementById('qtyDisplay');
+  if (el) el.textContent = S.rcvQty;
+
+  // update preview
+  var t = _modalId ? S.toners.find(function(x){ return x.id === _modalId; }) : null;
+  var sumEl = document.getElementById('qtySum');
+  if (sumEl && t) {
+    sumEl.textContent = _modalType === 'receive'
+      ? t.qty + S.rcvQty
+      : Math.max(0, t.qty - S.rcvQty);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  TONER OPTS FOR REQUEST
+// ─────────────────────────────────────────────
+function tonerMatchesPrinter(toner, printerName) {
+  return String(toner.compatible || '').split('|').map(function(value){ return value.trim(); }).indexOf(printerName) !== -1;
+}
+
+function buildTonerOpts(printerName) {
+  var list = printerName
+    ? S.toners.filter(function(t){ return tonerMatchesPrinter(t, printerName); })
+    : S.toners;
+  if (!list.length) return '<option value="">No toners registered for this printer</option>';
+  return list.map(function(t) {
+    return '<option value="' + t.tonerNo + '|' + t.name + ' ' + t.model + '">' +
+      t.tonerNo + ' · ' + t.name + ' ' + t.model + ' (' + t.qty + ' in stock)</option>';
+  }).join('');
+}
+
+function updateTonerOpts(sel) {
+  var p = S.printers.find(function(x){ return x.id == sel.value; });
+  var tonerSel = document.getElementById('f_toner');
+  if (tonerSel) tonerSel.innerHTML = buildTonerOpts(p ? p.name : '');
+}
+
+function updatePrintCount(sel) {
+  var p = S.printers.find(function(x){ return x.id == sel.value; });
+  var input = document.getElementById('f_printcount');
+  var hint  = document.getElementById('f_printcount_hint');
+  if (p && input) {
+    input.value = p.month;
+    if (hint) hint.innerHTML = 'Logged count for this printer: <strong>' + p.month.toLocaleString() + '</strong>';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MODAL ACTIONS
+// ─────────────────────────────────────────────
+async function doAddToner() {
+  var no    = (document.getElementById('f_no').value || '').trim();
+  var name  = (document.getElementById('f_name').value || '').trim();
+  var model = (document.getElementById('f_model').value || '').trim();
+  var compatible = selectedPrinterCompatibility();
+  if (!no || !name || !model) { alert('Please fill in toner number, color and model.'); return; }
+  if (!compatible) { alert('Please select at least one compatible printer.'); return; }
+  try {
+    await runAction('toner:add', { tonerNo:no, name:name, brand:document.getElementById('f_brand').value, model:model, compatible:compatible, qty:Number(document.getElementById('f_qty').value), minQty:Number(document.getElementById('f_min').value) });
+    closeModal(); showAlert('Toner added to warehouse.', 'success');
+  } catch (err) { alert(err.message); }
+}
+
+async function doEditToner() {
+  var compatible = selectedPrinterCompatibility();
+  if (!compatible) { alert('Please select at least one compatible printer.'); return; }
+  try {
+    await runAction('toner:edit', { id:_modalId, name:document.getElementById('f_name').value, brand:document.getElementById('f_brand').value, model:document.getElementById('f_model').value, compatible:compatible, qty:Number(document.getElementById('f_qty').value), minQty:Number(document.getElementById('f_min').value) });
+    closeModal(); showAlert('Toner updated and audited.', 'success');
+  } catch (err) { alert(err.message); }
+}
+
+async function doReceive() {
+  if (S.rcvQty <= 0) { alert('Please enter a quantity.'); return; }
+  var note = (document.getElementById('f_note').value || '').trim() || 'Stock received';
+  try { await runAction('stock:receive', { id:_modalId, qty:S.rcvQty, note:note }); closeModal(); showAlert('Stock received.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doIssue() {
+  if (S.rcvQty <= 0) { alert('Please enter a quantity.'); return; }
+  var printerId = Number(document.getElementById('f_issue_printer').value);
+  if (!printerId) { alert('Please select the printer receiving this toner.'); return; }
+  var note = (document.getElementById('f_note').value || '').trim() || 'Issued';
+  try { await runAction('stock:issue', { id:_modalId, qty:S.rcvQty, printerId:printerId, note:note }); closeModal(); showAlert('Toner replacement saved in printer history.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+function updateApproveStock(sel) {
+  var tonerNo = sel.value;
+  var t = S.toners.find(function(x){ return x.tonerNo === tonerNo; });
+  var hint = document.getElementById('approve_stock_hint');
+  var btn  = document.getElementById('approveBtn');
+  if (hint && t) {
+    var hasStock = t.qty > 0;
+    hint.innerHTML = 'Stock: <strong style="color:' + (hasStock ? 'var(--green)' : 'var(--red)') + '">' + t.qty + ' units</strong>' +
+      (hasStock ? ' — 1 will be deducted on approval' : ' — cannot approve, no stock');
+    if (btn) btn.disabled = !hasStock;
+  }
+}
+
+async function doApprove(id) {
+  var sel = document.getElementById('f_approve_toner');
+  try { await runAction('request:approve', { id:id, tonerNo:sel ? sel.value : '' }); closeModal(); showAlert('Request approved and stock deducted.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function rejectRequest(id) {
+  if (!confirm('Reject this request?')) return;
+  try { await runAction('request:reject', { id:id }); showAlert('Request rejected.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doNewRequest() {
+  var pSel       = document.getElementById('f_printer');
+  var pid        = parseInt(pSel.value);
+  var p          = S.printers.find(function(x){ return x.id === pid; });
+  var printCount = parseInt(document.getElementById('f_printcount').value) || 0;
+  var note       = (document.getElementById('f_note').value || '').trim();
+  if (!p) { alert('Please select a printer.'); return; }
+  try { await runAction('request:create', { printerId:pid, printCount:printCount, note:note }); closeModal(); showAlert('Request submitted to the administrator.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doAddPrinter() {
+  var name = (document.getElementById('f_pname').value || '').trim();
+  var loc  = (document.getElementById('f_ploc').value || '').trim();
+  if (!name || !loc) { alert('Please fill in printer name and location.'); return; }
+  try { await runAction('printer:add', { name:name, location:loc, toner:document.getElementById('f_ptoner').value }); closeModal(); showAlert('Printer added.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doEditPrinter() {
+  var name = (document.getElementById('f_pname').value || '').trim();
+  var loc  = (document.getElementById('f_ploc').value || '').trim();
+  if (!name || !loc) { alert('Please fill in printer name and location.'); return; }
+  try { await runAction('printer:edit', { id:_modalId, name:name, location:loc, toner:document.getElementById('f_ptoner').value, month:Number(document.getElementById('f_pmonth').value), total:Number(document.getElementById('f_ptotal').value) }); closeModal(); showAlert('Printer updated.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doLogPrints(id) {
+  if (S.rcvQty <= 0) { alert('Please enter a count.'); return; }
+  try { await runAction('printer:log', { id:id, count:S.rcvQty }); closeModal(); showAlert('Print count logged.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function doAddUser() {
+  var name  = (document.getElementById('f_uname').value || '').trim();
+  var email = (document.getElementById('f_uemail').value || '').trim();
+  var dept  = (document.getElementById('f_udept').value || '').trim();
+  if (!name || !email) { alert('Enter a name and valid email.'); return; }
+  try { await runAction('user:add', { name:name, email:email, dept:dept }); closeModal(); showAlert('User profile created.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+// ─────────────────────────────────────────────
+//  DELETE ACTIONS
+// ─────────────────────────────────────────────
+async function deleteToner(id) {
+  var t = S.toners.find(function(x){ return x.id === id; });
+  if (!confirm('Delete ' + t.tonerNo + ' — ' + t.name + ' ' + t.model + '?')) return;
+  try { await runAction('toner:delete', { id:id }); showAlert('Toner deleted.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function deletePrinter(id) {
+  if (!confirm('Delete this printer?')) return;
+  try { await runAction('printer:delete', { id:id }); showAlert('Printer deleted.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user?')) return;
+  try { await runAction('user:delete', { id:id }); showAlert('User deleted.', 'success'); }
+  catch (err) { alert(err.message); }
+}
+
+// ─────────────────────────────────────────────
+//  KEYBOARD
+// ─────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ─────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────
+bootApp();
+</script>
+</body>
+</html>
+
