@@ -609,8 +609,7 @@ var S = {
   stockView: 'stock',
   stockSearch: '',
   historyPrinter: 'all',
-  historyFrom: '',
-  historyTo: '',
+  historyMonth: new Date().toISOString().slice(0,7),
   selPrinter: null,
   rcvQty: 1,
   currentUser: null,
@@ -771,7 +770,7 @@ var ADMIN_NAV = [
   { id:'stock',      icon:'ti-building-warehouse', label:'Toner stock', badge:'alert' },
   { sec: 'Printers' },
   { id:'printers',   icon:'ti-printer',           label:'Printers'     },
-  { id:'printerhistory', icon:'ti-report',         label:'Toner history'},
+  { id:'printerhistory', icon:'ti-report',         label:'Monthly reports'},
   { sec: 'Requests' },
   { id:'requests',   icon:'ti-clipboard-list',    label:'All requests', badge:'pending' },
   { sec: 'Settings' },
@@ -1019,8 +1018,7 @@ function filteredPrinterHistory() {
   return S.stockHistory.filter(function(h) {
     if (h.type !== 'out' || !h.printer) return false;
     if (S.historyPrinter !== 'all' && h.printer !== S.historyPrinter) return false;
-    if (S.historyFrom && h.date < S.historyFrom) return false;
-    if (S.historyTo && h.date > S.historyTo) return false;
+    if (S.historyMonth && String(h.date || '').slice(0,7) !== S.historyMonth) return false;
     return true;
   }).slice().reverse();
 }
@@ -1033,6 +1031,13 @@ function setHistoryFilter(field, value) {
 function renderPrinterHistory() {
   var list = filteredPrinterHistory();
   var totalUnits = list.reduce(function(sum, h){ return sum + Number(h.qty || 0); }, 0);
+  var recipients = [];
+  var usedPrinters = [];
+  list.forEach(function(h) {
+    var recipient = h.assignedTo || historyRecipientFromNote(h.note) || h.printer || '';
+    if (recipient && recipients.indexOf(recipient) === -1) recipients.push(recipient);
+    if (h.printer && usedPrinters.indexOf(h.printer) === -1) usedPrinters.push(h.printer);
+  });
   var printerNames = [];
   S.printers.forEach(function(p) { if (printerNames.indexOf(p.name) === -1) printerNames.push(p.name); });
   S.stockHistory.forEach(function(h) { if (h.printer && printerNames.indexOf(h.printer) === -1) printerNames.push(h.printer); });
@@ -1040,44 +1045,65 @@ function renderPrinterHistory() {
     return '<option value="' + safeText(name) + '"' + (S.historyPrinter === name ? ' selected' : '') + '>' + safeText(name) + '</option>';
   }).join('');
   var rows = list.map(function(h, index) {
+    var recipient = h.assignedTo || historyRecipientFromNote(h.note) || '—';
+    var department = h.department || historyPrinterLocation(h.printer) || '—';
+    var requestNo = h.requestNo || historyRequestFromNote(h.note) || 'Manual issue';
     return '<tr>' +
       '<td>' + (index + 1) + '</td>' +
       '<td>' + safeText(h.date) + '</td>' +
       '<td><div style="font-weight:500">' + safeText(h.printer) + '</div></td>' +
+      '<td><div style="font-weight:500">' + safeText(recipient) + '</div><div style="font-size:11px;color:var(--text2);margin-top:3px">' + safeText(department) + '</div></td>' +
       '<td><span class="toner-no">' + safeText(h.tonerNo) + '</span><div style="font-size:11px;color:var(--text2);margin-top:3px">' + safeText(h.desc) + '</div></td>' +
       '<td>' + Number(h.qty || 0) + '</td>' +
+      '<td>' + safeText(requestNo) + (h.printCount != null ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">Print count: ' + Number(h.printCount || 0).toLocaleString() + '</div>' : '') + '</td>' +
       '<td>' + safeText(h.by || '—') + '</td>' +
       '<td style="font-size:11px;color:var(--text2)">' + safeText(h.note || '—') + '</td>' +
     '</tr>';
-  }).join('') || '<tr><td colspan="7"><div class="empty-state"><i class="ti ti-history"></i><p>No toner replacements found for this filter</p></div></td></tr>';
+  }).join('') || '<tr><td colspan="9"><div class="empty-state"><i class="ti ti-history"></i><p>No toner assignments found for this month</p></div></td></tr>';
 
   document.getElementById('page-printerhistory').innerHTML =
     '<div class="page-header">' +
-      '<div><div class="page-title"><i class="ti ti-report" style="font-size:16px;margin-right:6px;color:var(--purple)"></i>Printer toner history</div>' +
-      '<div class="page-sub">Toner replacements recorded for each office printer</div></div>' +
+      '<div><div class="page-title"><i class="ti ti-report" style="font-size:16px;margin-right:6px;color:var(--purple)"></i>Monthly toner assignment report</div>' +
+      '<div class="page-sub">See which toner was assigned to each user, department and printer</div></div>' +
       '<div class="page-actions">' +
         '<button class="btn" onclick="downloadPrinterHistoryCsv()"' + (list.length ? '' : ' disabled') + '><i class="ti ti-file-spreadsheet"></i>Export CSV</button>' +
         '<button class="btn btn-primary" onclick="printPrinterHistory()"' + (list.length ? '' : ' disabled') + '><i class="ti ti-printer"></i>Print / Save PDF</button>' +
       '</div>' +
     '</div>' +
     '<div class="metric-grid">' +
-      '<div class="metric-card"><div class="metric-label">Replacements</div><div class="metric-value">' + list.length + '</div><div class="metric-sub">Matching this report</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Assignments</div><div class="metric-value">' + list.length + '</div><div class="metric-sub">For selected month</div></div>' +
       '<div class="metric-card"><div class="metric-label">Toner units</div><div class="metric-value">' + totalUnits + '</div><div class="metric-sub">Issued to printers</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Recipients</div><div class="metric-value">' + recipients.length + '</div><div class="metric-sub">Users / departments</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Printers</div><div class="metric-value">' + usedPrinters.length + '</div><div class="metric-sub">Received toner</div></div>' +
     '</div>' +
     '<div class="card">' +
       '<div class="card-header" style="gap:10px;flex-wrap:wrap">' +
         '<span class="card-title">Report filters</span>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto">' +
+          '<input class="form-control" aria-label="Report month" title="Report month" style="width:165px" type="month" value="' + safeText(S.historyMonth) + '" onchange="setHistoryFilter(\'historyMonth\',this.value)">' +
           '<select class="form-control" aria-label="Filter by printer" style="width:280px" onchange="setHistoryFilter(\'historyPrinter\',this.value)">' + printerOpts + '</select>' +
-          '<input class="form-control" aria-label="From date" title="From date" style="width:145px" type="date" value="' + safeText(S.historyFrom) + '" onchange="setHistoryFilter(\'historyFrom\',this.value)">' +
-          '<input class="form-control" aria-label="To date" title="To date" style="width:145px" type="date" value="' + safeText(S.historyTo) + '" onchange="setHistoryFilter(\'historyTo\',this.value)">' +
         '</div>' +
       '</div>' +
       '<div class="table-wrap"><table>' +
-        '<thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Toner</th><th>Qty</th><th>Changed by</th><th>Note</th></tr></thead>' +
+        '<thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Assigned to / dept.</th><th>Toner</th><th>Qty</th><th>Request / count</th><th>Approved by</th><th>Note</th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
       '</table></div>' +
     '</div>';
+}
+
+function historyPrinterLocation(printerName) {
+  var printer = S.printers.find(function(p){ return p.name === printerName; });
+  return printer ? printer.location : '';
+}
+
+function historyRecipientFromNote(note) {
+  var match = String(note || '').match(/requested by (.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+function historyRequestFromNote(note) {
+  var match = String(note || '').match(/REQ-\d+/i);
+  return match ? match[0].toUpperCase() : '';
 }
 
 function csvCell(value) {
@@ -1089,13 +1115,13 @@ function csvCell(value) {
 function downloadPrinterHistoryCsv() {
   var list = filteredPrinterHistory();
   if (!list.length) return;
-  var lines = [['Date','Printer','Toner No.','Toner','Qty','Changed by','Note']].concat(list.map(function(h) {
-    return [h.date,h.printer,h.tonerNo,h.desc,h.qty,h.by,h.note];
+  var lines = [['Month','Date','Printer','Department / Location','Assigned to','Toner No.','Toner','Qty','Request No.','Print count','Approved / issued by','Note']].concat(list.map(function(h) {
+    return [String(h.date || '').slice(0,7),h.date,h.printer,h.department || historyPrinterLocation(h.printer),h.assignedTo || historyRecipientFromNote(h.note),h.tonerNo,h.desc,h.qty,h.requestNo || historyRequestFromNote(h.note) || 'Manual issue',h.printCount == null ? '' : h.printCount,h.by,h.note];
   })).map(function(row) { return row.map(csvCell).join(','); });
   var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
   var url = URL.createObjectURL(blob);
   var link = document.createElement('a');
-  link.href = url; link.download = 'printer-toner-history-' + new Date().toISOString().slice(0,10) + '.csv';
+  link.href = url; link.download = 'toner-assignment-report-' + (S.historyMonth || 'all') + '.csv';
   document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
 }
 
@@ -1103,11 +1129,11 @@ function printPrinterHistory() {
   var list = filteredPrinterHistory();
   if (!list.length) return;
   var rows = list.map(function(h, index) {
-    return '<tr><td>' + (index + 1) + '</td><td>' + safeText(h.date) + '</td><td>' + safeText(h.printer) + '</td><td>' + safeText(h.tonerNo + ' · ' + h.desc) + '</td><td>' + Number(h.qty || 0) + '</td><td>' + safeText(h.by || '—') + '</td><td>' + safeText(h.note || '—') + '</td></tr>';
+    return '<tr><td>' + (index + 1) + '</td><td>' + safeText(h.date) + '</td><td>' + safeText(h.printer) + '</td><td>' + safeText(h.assignedTo || historyRecipientFromNote(h.note) || '—') + '<br><small>' + safeText(h.department || historyPrinterLocation(h.printer) || '—') + '</small></td><td>' + safeText(h.tonerNo + ' · ' + h.desc) + '</td><td>' + Number(h.qty || 0) + '</td><td>' + safeText(h.requestNo || historyRequestFromNote(h.note) || 'Manual issue') + (h.printCount == null ? '' : '<br><small>Print count: ' + Number(h.printCount || 0).toLocaleString() + '</small>') + '</td><td>' + safeText(h.by || '—') + '</td><td>' + safeText(h.note || '—') + '</td></tr>';
   }).join('');
   var reportWindow = window.open('', '_blank', 'width=1100,height=750');
   if (!reportWindow) { alert('Please allow the report window in your browser.'); return; }
-  reportWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Printer toner history</title><style>body{font-family:Arial,sans-serif;color:#17171a;padding:28px}h1{font-size:22px;margin:0 0 5px}.meta{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccc;padding:7px;text-align:left;vertical-align:top}th{background:#f1f1f5}tfoot td{font-weight:bold}@page{size:landscape;margin:12mm}</style></head><body><h1>TonerERP — Printer toner history</h1><div class="meta">Generated: ' + safeText(new Date().toLocaleString()) + ' · Records: ' + list.length + '</div><table><thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Toner</th><th>Qty</th><th>Changed by</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>');
+  reportWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Monthly toner assignment report</title><style>body{font-family:Arial,sans-serif;color:#17171a;padding:28px}h1{font-size:22px;margin:0 0 5px}.meta{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ccc;padding:6px;text-align:left;vertical-align:top}th{background:#f1f1f5}small{color:#666}@page{size:landscape;margin:10mm}</style></head><body><h1>TonerERP — Monthly toner assignment report</h1><div class="meta">Month: ' + safeText(S.historyMonth || 'All months') + ' · Generated: ' + safeText(new Date().toLocaleString()) + ' · Assignments: ' + list.length + ' · Toner units: ' + list.reduce(function(sum,h){return sum + Number(h.qty || 0);},0) + '</div><table><thead><tr><th>#</th><th>Date</th><th>Printer</th><th>Assigned to / dept.</th><th>Toner</th><th>Qty</th><th>Request / count</th><th>Approved by</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>');
   reportWindow.document.close();
   reportWindow.focus();
   setTimeout(function(){ reportWindow.print(); }, 250);
@@ -1506,6 +1532,9 @@ function buildModal() {
     var issuePrinterOpts = issuePrinters.map(function(p) {
       return '<option value="' + p.id + '">' + safeText(p.name) + '</option>';
     }).join('');
+    var issueUserOpts = S.users.filter(function(u){ return u.role !== 'admin'; }).map(function(u) {
+      return '<option value="' + u.id + '">' + safeText(u.name + ' · ' + (u.dept || 'Staff')) + '</option>';
+    }).join('');
 
     html = modal(
       (isReceive ? 'ti-truck-delivery" style="color:var(--green)' : 'ti-arrow-bar-right" style="color:var(--amber)'),
@@ -1527,6 +1556,7 @@ function buildModal() {
           '</div>'
         ) +
         (isReceive ? '' : fgf('Printer', '<select class="form-control" id="f_issue_printer">' + issuePrinterOpts + '</select>')) +
+        (isReceive ? '' : fgf('Assigned to / received by', '<select class="form-control" id="f_issue_user"><option value="">Office / printer (no person)</option>' + issueUserOpts + '</select>')) +
         fgf(isReceive ? 'Delivery / PO note' : 'Issued to / note',
           '<input class="form-control" id="f_note" placeholder="' + (isReceive ? 'e.g. PO-114, supplier delivery' : 'e.g. Replaced empty toner') + '">'
         ) +
@@ -1763,8 +1793,9 @@ async function doIssue() {
   if (S.rcvQty <= 0) { alert('Please enter a quantity.'); return; }
   var printerId = Number(document.getElementById('f_issue_printer').value);
   if (!printerId) { alert('Please select the printer receiving this toner.'); return; }
+  var userId = Number(document.getElementById('f_issue_user').value) || 0;
   var note = (document.getElementById('f_note').value || '').trim() || 'Issued';
-  try { await runAction('stock:issue', { id:_modalId, qty:S.rcvQty, printerId:printerId, note:note }); closeModal(); showAlert('Toner replacement saved in printer history.', 'success'); }
+  try { await runAction('stock:issue', { id:_modalId, qty:S.rcvQty, printerId:printerId, userId:userId, note:note }); closeModal(); showAlert('Toner assignment saved in the monthly report.', 'success'); }
   catch (err) { alert(err.message); }
 }
 
