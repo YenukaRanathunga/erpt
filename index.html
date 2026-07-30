@@ -1545,6 +1545,8 @@ function buildModal() {
 
   else if (_modalType === 'approve') {
     var r = S.requests.find(function(x){ return x.id === _modalId; });
+    var requestPrinter = S.printers.find(function(p){ return p.name === r.printer; });
+    var adminPrintCount = requestPrinter ? requestPrinter.month : 0;
     // build toner options compatible with this printer
     var compatToners = S.toners.filter(function(x){ return tonerMatchesPrinter(x, r.printer); });
     var allToners    = S.toners;
@@ -1558,10 +1560,13 @@ function buildModal() {
       '<div class="info-box">' +
         '<div class="ib-label">Request ' + reqId(r.id) + ' · ' + r.printer + '</div>' +
         '<div class="ib-value">Requested by ' + r.user + '</div>' +
-        (r.printCount ? '<div style="font-size:12px;color:var(--text2);margin-top:4px"><i class="ti ti-printer" style="font-size:12px;margin-right:3px"></i>Print count reported: <strong>' + r.printCount.toLocaleString() + '</strong> this month</div>' : '') +
         (r.note ? '<div style="font-size:11px;color:var(--text2);margin-top:3px;font-style:italic">Note: ' + r.note + '</div>' : '') +
       '</div>' +
       '<div class="form-grid">' +
+        fgf('Current print count (this month)',
+          '<input class="form-control" id="f_approve_printcount" type="number" min="0" value="' + adminPrintCount + '" placeholder="e.g. 1240">' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:4px">Admin records this count when approving the request.</div>'
+        ) +
         fgf('Assign toner cartridge',
           '<select class="form-control" id="f_approve_toner" onchange="updateApproveStock(this)">' + tonerOpts + '</select>' +
           '<div style="margin-top:6px;font-size:12px;color:var(--text2)" id="approve_stock_hint">' +
@@ -1578,17 +1583,11 @@ function buildModal() {
     var printerOpts = S.printers.map(function(p) {
       return '<option value="' + p.id + '"' + (preselPrinter && p.id === preselPrinter.id ? ' selected' : '') + '>' + p.name + ' — ' + p.location + '</option>';
     }).join('');
-    var firstPrinter = preselPrinter || S.printers[0];
-    var curMonth = firstPrinter ? firstPrinter.month : 0;
     html = modal(
       'ti-clipboard-list" style="color:var(--purple)',
       'New toner request',
       '<div class="form-grid">' +
-        fgf('Printer', '<select class="form-control" id="f_printer" onchange="updatePrintCount(this)">' + printerOpts + '</select>') +
-        fgf('Current print count (this month)',
-          '<input class="form-control" id="f_printcount" type="number" min="0" value="' + curMonth + '" placeholder="e.g. 1240">' +
-          '<div style="font-size:11px;color:var(--text3);margin-top:4px" id="f_printcount_hint">Logged count for this printer: <strong>' + curMonth.toLocaleString() + '</strong></div>'
-        ) +
+        fgf('Printer', '<select class="form-control" id="f_printer">' + printerOpts + '</select>') +
         fgf('Note (optional)', '<input class="form-control" id="f_note" placeholder="e.g. Toner very low, printing faded">') +
       '</div>' +
       '<div style="background:var(--blue-l);border:0.5px solid #B5D4F4;border-radius:var(--radius);padding:10px 12px;margin-top:10px;font-size:12px;color:var(--blue)"><i class="ti ti-info-circle" style="font-size:13px;margin-right:5px"></i>Admin will assign the correct toner cartridge and approve your request.</div>',
@@ -1728,16 +1727,6 @@ function updateTonerOpts(sel) {
   if (tonerSel) tonerSel.innerHTML = buildTonerOpts(p ? p.name : '');
 }
 
-function updatePrintCount(sel) {
-  var p = S.printers.find(function(x){ return x.id == sel.value; });
-  var input = document.getElementById('f_printcount');
-  var hint  = document.getElementById('f_printcount_hint');
-  if (p && input) {
-    input.value = p.month;
-    if (hint) hint.innerHTML = 'Logged count for this printer: <strong>' + p.month.toLocaleString() + '</strong>';
-  }
-}
-
 // ─────────────────────────────────────────────
 //  MODAL ACTIONS
 // ─────────────────────────────────────────────
@@ -1794,7 +1783,10 @@ function updateApproveStock(sel) {
 
 async function doApprove(id) {
   var sel = document.getElementById('f_approve_toner');
-  try { await runAction('request:approve', { id:id, tonerNo:sel ? sel.value : '' }); closeModal(); showAlert('Request approved and stock deducted.', 'success'); }
+  var printCountInput = document.getElementById('f_approve_printcount');
+  var printCount = parseInt(printCountInput ? printCountInput.value : '0');
+  if (!Number.isFinite(printCount) || printCount < 0) { alert('Please enter a valid print count.'); return; }
+  try { await runAction('request:approve', { id:id, tonerNo:sel ? sel.value : '', printCount:printCount }); closeModal(); showAlert('Request approved, print count saved and stock deducted.', 'success'); }
   catch (err) { alert(err.message); }
 }
 
@@ -1808,10 +1800,9 @@ async function doNewRequest() {
   var pSel       = document.getElementById('f_printer');
   var pid        = parseInt(pSel.value);
   var p          = S.printers.find(function(x){ return x.id === pid; });
-  var printCount = parseInt(document.getElementById('f_printcount').value) || 0;
   var note       = (document.getElementById('f_note').value || '').trim();
   if (!p) { alert('Please select a printer.'); return; }
-  try { await runAction('request:create', { printerId:pid, printCount:printCount, note:note }); closeModal(); showAlert('Request submitted to the administrator.', 'success'); }
+  try { await runAction('request:create', { printerId:pid, note:note }); closeModal(); showAlert('Request submitted to the administrator.', 'success'); }
   catch (err) { alert(err.message); }
 }
 
