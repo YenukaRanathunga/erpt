@@ -1,16 +1,19 @@
 {
-  "name": "tonererp-vercel-shared",
+  "name": "chrysalis-mobility-ops",
   "version": "2.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "check": "node --check lib/core.js && node --check lib/platform.js"
-  },
+  "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
   "dependencies": {
-    "postgres": "^3.4.7"
+    "@clerk/nextjs": "latest",
+    "@neondatabase/serverless": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
   },
-  "engines": {
-    "node": "22.x"
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
   }
 }
-

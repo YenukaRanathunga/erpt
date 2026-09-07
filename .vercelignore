@@ -1,11 +1,13 @@
-node_modules
 .npm-cache
 .next
+node_modules
 dist
-.env*
-!.env.example
-.vercel
 .vercel-cli-cache
 .vercel-cli-config
 .vercel-cli-data
+App.tsx
+main.tsx
+index.html
+style.css
+vite.config.ts
 .staff-import/
