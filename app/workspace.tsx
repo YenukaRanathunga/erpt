@@ -474,6 +474,14 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
   const [newPassenger,setNewPassenger] = useState("");
   const focused = requests.find(item => item.id === focusedId) ?? candidates[0] ?? activeTrips[0];
   const replacementVehicles = vehicles.filter(item=>item.status === "Available");
+  const availableCompanies = useMemo(() => {
+    const active = vehicles
+      .filter(item => item.status === "Available")
+      .map(item => (item.company || item.registration).trim())
+      .filter(Boolean);
+    const combined = vehicle && !active.includes(vehicle) ? [vehicle, ...active] : active;
+    return Array.from(new Set(combined));
+  }, [vehicles, vehicle]);
   const passengerNames = (item: RequestItem) => item.passengers?.length ? item.passengers : [item.person];
   const passengerCount = (id: string) => { const request=requests.find(item=>item.id===id); return request ? passengerNames(request).length : 0; };
   const totalPassengers = selected.reduce((total,id) => total + passengerCount(id),0);
@@ -585,7 +593,14 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
     </div>
 
     <aside className="panel fleet-panel expanded-fleet"><div className="panel-head"><div><h2>Trip setup</h2><p>Complete operational allocation</p></div><span className="edit-live"><i/> LIVE</span></div>
-      <label><span>Vehicle company *</span><input list="registered-vehicle-companies" value={vehicle} onChange={event => setVehicle(event.target.value)} placeholder="Select or enter transport company name" /><datalist id="registered-vehicle-companies">{vehicles.filter(item=>item.status==="Available").map(item=><option key={item.id} value={item.company || item.registration}>{item.company || item.registration}</option>)}</datalist></label>
+      <label><span>Vehicle company *</span>
+        <select value={vehicle} onChange={event => setVehicle(event.target.value)} required>
+          <option value="" disabled>{availableCompanies.length ? "Select available vehicle company" : "No available vehicle companies"}</option>
+          {availableCompanies.map(comp => (
+            <option key={comp} value={comp}>{comp}</option>
+          ))}
+        </select>
+      </label>
       <label><span>Vehicle type *</span><select value={vehicleType} onChange={event => setVehicleType(event.target.value)}><option value="" disabled>Select vehicle type</option><option>Car</option><option>Van</option><option>Bus</option><option>Lorry</option><option>Cab</option><option>Other</option></select></label>
       <label><span>Admin notes</span><textarea placeholder="Special requirements, route risks, accommodation or coordination notes" value={adminNotes} onChange={event => setAdminNotes(event.target.value)} /></label>
       {standaloneMode && <div className="demo-note"><span>i</span><p><strong>Standalone mode</strong> — allocate a vehicle company and type without linking a request.</p></div>}
