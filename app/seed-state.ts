@@ -41,10 +41,10 @@ export function createSeedState() {
     ],
     offices: [...new Set(["Head Office", "Galle Area Office", ...staffMembers.map(staff => staff.office)])],
     vehicles: [
-      { id: "VEH-001", registration: "CP CAB-1842", model: "Toyota HiAce", type: "Van", seats: 9, office: "Head Office", fuel: "Diesel", status: "Available" },
-      { id: "VEH-002", registration: "WP KV-7712", model: "Nissan Caravan", type: "Van", seats: 12, office: "Head Office", fuel: "Diesel", status: "Available" },
-      { id: "VEH-003", registration: "SP CAD-5521", model: "Toyota KDH", type: "Van", seats: 8, office: "Matara Area Office", fuel: "Diesel", status: "Available" },
-      { id: "VEH-004", registration: "WP KX-9044", model: "Toyota Coaster", type: "Bus", seats: 29, office: "Head Office", fuel: "Diesel", status: "Available" },
+      { id: "VEH-001", registration: "CP CAB-1842", company: "Chrysalis Transport Partner", model: "Toyota HiAce", type: "Van", seats: 9, office: "Head Office", fuel: "Diesel", status: "Available" },
+      { id: "VEH-002", registration: "WP KV-7712", company: "Chrysalis Transport Partner", model: "Nissan Caravan", type: "Van", seats: 12, office: "Head Office", fuel: "Diesel", status: "Available" },
+      { id: "VEH-003", registration: "SP CAD-5521", company: "Southern Transport Partner", model: "Toyota KDH", type: "Van", seats: 8, office: "Matara Area Office", fuel: "Diesel", status: "Available" },
+      { id: "VEH-004", registration: "WP KX-9044", company: "Colombo Express Fleet", model: "Toyota Coaster", type: "Bus", seats: 29, office: "Head Office", fuel: "Diesel", status: "Available" },
     ],
     conversations: [],
   };
