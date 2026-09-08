@@ -9,3 +9,6 @@ dist
 .vercel-cli-config
 .vercel-cli-data
 .staff-import/
+
+.vercel
+.env*

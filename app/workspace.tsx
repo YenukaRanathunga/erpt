@@ -672,11 +672,12 @@ function RequestChat({ requests, currentUser, currentRole, onUpdateRequest }: { 
 }
 
 function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCancelRequest }: { requests: RequestItem[]; currentUser: string; approvedOnly?: boolean; onNew: () => void; onCancelRequest: (id: string, patch: Partial<RequestItem>) => void }) {
-  type CalendarEvent = { id: string; owner: string; route: string; date: Date; day: number; time: string; end: string; office: string; status: string; tone: string; passengers: number; purpose: string };
+  type CalendarEvent = { id: string; owner: string; route: string; date: Date; day: number; time: string; end: string; returnDate: string; returnTime: string; departureDate: string; office: string; status: string; tone: string; passengers: number; purpose: string; vehicleCompany?: string; vehicleType?: string; driver?: string; tripId?: string };
   const personInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join("").toUpperCase();
   const startOfDay = (value: Date) => new Date(value.getFullYear(),value.getMonth(),value.getDate());
   const startOfWorkWeek = (value: Date) => { const date=startOfDay(value); const day=date.getDay(); date.setDate(date.getDate()-(day===0?6:day-1)); return date; };
   const parseRequestDate = (value: string) => { const clean=value.trim(); const iso=clean.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(iso) return new Date(Number(iso[1]),Number(iso[2])-1,Number(iso[3])); const numeric=clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/); if(numeric) return new Date(Number(numeric[3]??2026),Number(numeric[2])-1,Number(numeric[1])); const parsed=new Date(/\b\d{4}\b/.test(clean)?clean:`${clean} 2026`); return Number.isNaN(parsed.getTime())?null:startOfDay(parsed); };
+  const formatTripDate = (val?: string) => { if (!val) return ""; const clean = val.trim(); const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (iso) { const d = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])); return d.toLocaleDateString("en-US", { day: "numeric", month: "short" }); } return clean; };
   const dateKey = (value: Date) => `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,"0")}-${String(value.getDate()).padStart(2,"0")}`;
   const baseWeekStart = startOfWorkWeek(new Date());
   const [showMine,setShowMine] = useState(true);
@@ -695,7 +696,33 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
   const miniLeadingDays = (miniDate.getDay()+6)%7;
   const miniDaysInMonth = new Date(miniDate.getFullYear(),miniDate.getMonth()+1,0).getDate();
   const hours = Array.from({length:13},(_,index)=>index+6);
-  const requestEvents: CalendarEvent[] = requests.flatMap((item,index) => { const date=parseRequestDate(item.date); return date?[{id:item.id,owner:item.person,route:item.route,date,day:0,time:item.time,end:item.returnTime??`${String(Math.min(Number.parseInt(item.time,10)+3,19)).padStart(2,"0")}:00`,office:officeForRequest(item),status:item.status,tone:item.tone,passengers:item.passengers?.length??index%3+1,purpose:item.purpose??"Field visit and programme coordination"}]:[]; });
+  const requestEvents: CalendarEvent[] = requests.flatMap((item,index) => {
+    const date = parseRequestDate(item.date);
+    const returnTime = item.returnTime ?? `${String(Math.min(Number.parseInt(item.time,10)+3,19)).padStart(2,"0")}:00`;
+    const returnDate = formatTripDate(item.returnDate ?? item.date);
+    const departureDate = formatTripDate(item.date);
+    return date ? [{
+      id: item.id,
+      owner: item.person,
+      route: item.route,
+      date,
+      day: 0,
+      time: item.time,
+      end: returnTime,
+      returnDate,
+      returnTime,
+      departureDate,
+      office: officeForRequest(item),
+      status: item.status,
+      tone: item.tone,
+      passengers: item.passengers?.length ?? (index % 3 + 1),
+      purpose: item.purpose ?? "Field visit and programme coordination",
+      vehicleCompany: item.vehicleCompany ?? (item.vehicle ? item.vehicle.split(" · ")[0] : undefined),
+      vehicleType: item.vehicleType ?? (item.vehicle ? item.vehicle.split(" · ")[1] : undefined),
+      driver: item.driver,
+      tripId: item.tripId
+    }] : [];
+  });
   const allEvents = requestEvents;
   const statusEvents = approvedOnly ? allEvents.filter(item => item.owner === currentUser ? ["Awaiting approval","Needs revision","Approved","Trip scheduled"].includes(item.status) : item.status === "Approved" || item.status === "Trip scheduled") : allEvents;
   const calendarEvents = statusEvents.map(item=>({...item,day:Math.round((startOfDay(item.date).getTime()-weekStart.getTime())/86400000)})).filter(item=>item.day>=0&&item.day<5);
@@ -707,12 +734,75 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
   const eventTop = (time: string) => { const [hour,minute] = time.split(":").map(Number); return ((hour-6)*60+minute)/60*54; };
   const eventHeight = (start: string,end: string) => { const [sh,sm]=start.split(":").map(Number); const [eh,em]=end.split(":").map(Number); return Math.max(40,((eh*60+em)-(sh*60+sm))/60*54); };
   const eventMinutes = (time: string) => { const [hour,minute]=time.split(":").map(Number); return hour*60+minute; };
-  const eventLayout = (event: CalendarEvent,dayEvents: CalendarEvent[]) => { const start=eventMinutes(event.time); const end=eventMinutes(event.end); const overlaps=dayEvents.filter(item=>eventMinutes(item.time)<end&&eventMinutes(item.end)>start).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id)); const position=Math.max(0,overlaps.findIndex(item=>item.id===event.id)); const columns=Math.min(2,Math.max(1,overlaps.length)); const column=position%columns; const row=Math.floor(position/columns); const cardHeight=Math.min(104,eventHeight(event.time,event.end)); return {top:eventTop(event.time)+row*112,height:cardHeight,left:`calc(${column*100/columns}% + 5px)`,width:`calc(${100/columns}% - 9px)`,right:"auto",zIndex:3+position}; };
+  const eventLayout = (event: CalendarEvent,dayEvents: CalendarEvent[]) => {
+    const start=eventMinutes(event.time);
+    const end=eventMinutes(event.end);
+    const overlaps=dayEvents.filter(item=>eventMinutes(item.time)<end&&eventMinutes(item.end)>start).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id));
+    const position=Math.max(0,overlaps.findIndex(item=>item.id===event.id));
+    const columns=Math.min(2,Math.max(1,overlaps.length));
+    const column=position%columns;
+    const row=Math.floor(position/columns);
+    const minCardHeight = 120;
+    const calcHeight = Math.max(minCardHeight, Math.min(185, eventHeight(event.time, event.end)));
+    return {
+      top: eventTop(event.time) + row * 128,
+      minHeight: `${minCardHeight}px`,
+      height: `${calcHeight}px`,
+      left: `calc(${column*100/columns}% + 3px)`,
+      width: `calc(${100/columns}% - 6px)`,
+      right: "auto",
+      zIndex: 3+position
+    };
+  };
 
   return <><PageTitle eyebrow="SHARED MOBILITY CALENDAR" title="Trips calendar" subtitle="See your journeys and the wider team schedule in a familiar Outlook-style calendar." action={<button className="primary" onClick={onNew}>＋ New vehicle request</button>} />
     <div className="calendar-shell"><aside className="panel calendar-sidebar"><button className="calendar-new" onClick={onNew}>＋ New request</button><div className="mini-calendar"><div><button aria-label="Previous month" onClick={()=>setMonthOffset(value=>value-1)}>‹</button><strong>{miniMonth}</strong><button aria-label="Next month" onClick={()=>setMonthOffset(value=>value+1)}>›</button></div><div className="mini-weekdays">{["M","T","W","T","F","S","S"].map((day,index)=><span key={`${day}-${index}`}>{day}</span>)}</div><div className="mini-days">{Array.from({length:42},(_,index)=>{const date=index-miniLeadingDays+1;const valid=date>0&&date<=miniDaysInMonth;return <button key={index} onClick={()=>{if(valid){const chosen=new Date(miniDate.getFullYear(),miniDate.getMonth(),date);const chosenWeek=startOfWorkWeek(chosen);setWeekOffset(Math.round((chosenWeek.getTime()-baseWeekStart.getTime())/604800000));setSelectedMiniDate(date);setSelectedId(null);announce(`Calendar date ${date} ${miniMonth} selected.`)}}} className={valid&&date===selectedMiniDate&&miniDate.getMonth()===weekStart.getMonth()?"today":!valid?"muted":""}>{valid?date:""}</button>})}</div></div><div className="calendar-lists"><p>MY CALENDARS</p><label><input type="checkbox" checked={showMine} onChange={event=>setShowMine(event.target.checked)}/><i className="mine"/><span>My trips</span><b>{calendarEvents.filter(item=>item.owner===currentUser).length}</b></label><label><input type="checkbox" checked={showTeam} onChange={event=>setShowTeam(event.target.checked)}/><i className="team"/><span>Team trips</span><b>{calendarEvents.filter(item=>item.owner!==currentUser).length}</b></label></div><div className="calendar-legend"><p>STATUS</p><span><i className="green"/>Approved</span><span><i className="blue"/>Scheduled</span>{!approvedOnly && <span><i className="amber"/>Awaiting approval</span>}</div><div className="calendar-tip"><span>i</span><p>{approvedOnly ? "Only approved and scheduled journeys are shown to requesters." : "Team calendars show journey timing and coordination details without exposing budget information."}</p></div></aside>
       <section className="panel calendar-main"><div className="calendar-toolbar"><div><button onClick={()=>{setWeekOffset(0);setSelectedId(null)}}>Today</button><button aria-label="Previous week" onClick={()=>{setWeekOffset(value=>value-1);setSelectedId(null)}}>‹</button><button aria-label="Next week" onClick={()=>{setWeekOffset(value=>value+1);setSelectedId(null)}}>›</button><h2>{weekLabel}</h2></div><div className="calendar-view-switch"><button className={mode==="week"?"active":""} onClick={()=>setMode("week")}>Work week</button><button className={mode==="schedule"?"active":""} onClick={()=>setMode("schedule")}>Schedule</button></div></div>
-        {mode === "week" ? <div className="week-calendar"><div className="week-header"><span/><>{days.map(day=><div key={day.key} className={day.key===dateKey(new Date())?"today":""}><small>{day.name}</small><strong>{day.date}</strong></div>)}</></div><div className="week-body"><div className="time-axis">{hours.map(hour=><span key={hour}>{String(hour).padStart(2,"0")}:00</span>)}</div>{days.map((day,dayIndex)=>{const dayEvents=visibleEvents.filter(item=>item.day===dayIndex).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id));return <div className={`day-column ${day.key===dateKey(new Date())?"today":""}`} key={day.key}>{hours.map(hour=><i key={hour}/>)}{dayEvents.map(event=><button key={event.id} title={`${event.time}–${event.end} · ${event.route} · ${event.owner}`} aria-label={`${event.route}, ${event.time} to ${event.end}, ${event.owner}`} className={`calendar-event ${event.owner===currentUser?"mine":"team"} ${event.tone}`} style={eventLayout(event,dayEvents)} onClick={()=>setSelectedId(event.id)}><span>{event.time}–{event.end}</span><strong>{event.route}</strong><small>{event.owner===currentUser?"My trip":event.owner}</small></button>)}</div>})}</div></div> : <div className="schedule-view">{days.map((day,dayIndex)=><section key={day.key}><div className="schedule-date"><strong>{day.date}</strong><span>{day.name}<small>{day.value.toLocaleDateString("en-US",{month:"long"}).toUpperCase()}</small></span></div><div>{visibleEvents.filter(item=>item.day===dayIndex).length ? visibleEvents.filter(item=>item.day===dayIndex).map(event=><button key={event.id} onClick={()=>setSelectedId(event.id)}><time>{event.time}</time><i className={event.owner===currentUser?"mine":"team"}/><span><strong>{event.route}</strong><small>{event.owner} · {event.passengers} passengers · {event.office}</small></span><Status tone={event.tone}>{event.status}</Status></button>) : <p>No trips scheduled</p>}</div></section>)}</div>}
+        {mode === "week" ? <div className="week-calendar"><div className="week-header"><span/><>{days.map(day=><div key={day.key} className={day.key===dateKey(new Date())?"today":""}><small>{day.name}</small><strong>{day.date}</strong></div>)}</></div><div className="week-body"><div className="time-axis">{hours.map(hour=><span key={hour}>{String(hour).padStart(2,"0")}:00</span>)}</div>{days.map((day,dayIndex)=>{const dayEvents=visibleEvents.filter(item=>item.day===dayIndex).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id));return <div className={`day-column ${day.key===dateKey(new Date())?"today":""}`} key={day.key}>{hours.map(hour=><i key={hour}/>)}{dayEvents.map(event=><button key={event.id} title={`${event.time}–${event.end} · ${event.route} · Return: ${event.returnDate} ${event.returnTime} · ${event.owner}`} aria-label={`${event.route}, ${event.time} to ${event.end}, Return: ${event.returnDate} ${event.returnTime}, ${event.owner}`} className={`calendar-event ${event.owner===currentUser?"mine":"team"} ${event.tone}`} style={eventLayout(event,dayEvents)} onClick={()=>setSelectedId(event.id)}>
+          <div className="cal-card-head">
+            <span className="cal-card-times">
+              <i className="cal-card-icon">🚗</i>
+              <strong>{event.time}</strong>
+              <span className="cal-arrow">→</span>
+              <strong>{event.end}</strong>
+            </span>
+            <span className={`cal-badge ${event.tone}`}>{event.status}</span>
+          </div>
+          <div className="cal-card-route" title={event.route}>{event.route}</div>
+          <div className="cal-card-pills">
+            <span className="cal-pill">REF: <b>{event.id}</b></span>
+            <span className="cal-pill">PAX: <b>{event.passengers}</b></span>
+          </div>
+          <div className="cal-card-return" title={`Return: ${event.returnDate} at ${event.returnTime}`}>
+            <span className="cal-return-icon">↩</span>
+            <span className="cal-return-text">Return: <strong>{event.returnDate} · {event.returnTime}</strong></span>
+          </div>
+          <div className="cal-card-footer">
+            <span className="cal-owner" title={event.owner}>👤 {event.owner===currentUser?`${event.owner} (You)`:event.owner}</span>
+            {event.vehicleCompany ? <span className="cal-vehicle" title={event.vehicleCompany}>🏢 {event.vehicleCompany}</span> : <span className="cal-office" title={event.office}>📍 {event.office}</span>}
+          </div>
+        </button>)}</div>})}</div></div> : <div className="schedule-view">{days.map((day,dayIndex)=><section key={day.key}><div className="schedule-date"><strong>{day.date}</strong><span>{day.name}<small>{day.value.toLocaleDateString("en-US",{month:"long"}).toUpperCase()}</small></span></div><div>{visibleEvents.filter(item=>item.day===dayIndex).length ? visibleEvents.filter(item=>item.day===dayIndex).map(event=><button key={event.id} onClick={()=>setSelectedId(event.id)} className={`schedule-card-detailed ${event.tone}`}>
+          <div className="sched-times">
+            <span className="sched-dep">🛫 {event.time}</span>
+            <span className="sched-arr">🛬 {event.end}</span>
+          </div>
+          <div className="sched-main">
+            <div className="sched-head">
+              <strong className="sched-route">{event.route}</strong>
+              <span className={`cal-badge ${event.tone}`}>{event.status}</span>
+            </div>
+            <div className="sched-meta">
+              <span className="cal-pill">REF: <b>{event.id}</b></span>
+              <span className="cal-pill">PAX: <b>{event.passengers}</b></span>
+              <span className="cal-card-return">
+                <span className="cal-return-icon">↩</span>
+                <span>Return: <strong>{event.returnDate} · {event.returnTime}</strong></span>
+              </span>
+              <span className="sched-owner">👤 <b>{event.owner}</b></span>
+              {event.vehicleCompany && <span className="sched-vehicle">🏢 <b>{event.vehicleCompany}</b></span>}
+            </div>
+          </div>
+        </button>) : <p>No trips scheduled</p>}</div></section>)}</div>}
         {selected && <div className="trip-modal-backdrop">
           <section className="trip-modal" role="dialog" aria-modal="true" aria-labelledby="trip-modal-title">
             <button className="trip-modal-close" aria-label="Close trip details" onClick={()=>setSelectedId(null)}>×</button>

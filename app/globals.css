@@ -137,8 +137,79 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 @media(max-width:780px){.login-cinema{display:block;min-height:100vh;background:linear-gradient(155deg,#071d36 0 210px,#eef4fa 210px 100%)}.login-cinema-visual{display:none}.login-cinema-panel{min-height:100vh;padding:26px 18px;background:transparent}.login-cinema-card{padding:30px 24px 26px;border-radius:20px}.cinema-mobile-brand{display:flex;margin-bottom:35px;padding-bottom:25px;border-bottom:1px solid #e0e8f0}.cinema-mobile-brand strong{color:#0f568f}.cinema-mobile-brand span{color:#7890a6}.cinema-access-icon{margin-bottom:20px}.login-cinema-card h2{font-size:32px}.cinema-version{color:#6d8296}}
 @media(prefers-reduced-motion:reduce){.cinema-orbit-two:after{animation:none}.bar-group i,.bar-group b,.login-cinema-card .employee-submit{transition:none}}
 
-/* Outlook-style compact calendar appointments */
-.calendar-event{min-height:46px;padding:8px 9px;border:1px solid rgba(15,108,189,.16);border-left:4px solid var(--blue);border-radius:7px;background:linear-gradient(145deg,#eaf4fd,#deeffc);box-shadow:0 2px 8px rgba(27,70,110,.11);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.calendar-event:hover,.calendar-event:focus-visible{z-index:20!important;transform:translateY(-1px);border-color:rgba(15,108,189,.42);box-shadow:0 7px 18px rgba(27,70,110,.2)}.calendar-event>span{font-size:7px;letter-spacing:.15px}.calendar-event>strong{margin-top:5px;font-size:9px;line-height:1.25}.calendar-event>small{margin-top:5px;font-size:7px;line-height:1.3}.calendar-event.mine{border-left-color:var(--pink);background:linear-gradient(145deg,#fff0f4,#fce4eb)}.calendar-event.green{border-left-color:var(--green);background:linear-gradient(145deg,#edf8f3,#e1f3eb)}.calendar-event.amber{border-left-color:#d99a32;background:linear-gradient(145deg,#fff8e8,#fff0ce)}
+/* World-class Ops Board Calendar Card */
+.week-header{display:grid!important;grid-template-columns:56px repeat(5,minmax(215px,1fr))!important;min-width:1130px!important;border-bottom:1px solid var(--line)}
+.week-body{display:grid!important;grid-template-columns:56px repeat(5,minmax(215px,1fr))!important;min-width:1130px!important;height:720px!important;position:relative}
+
+.calendar-event{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  min-height:120px;
+  padding:8px 10px;
+  border:1px solid #c7dcf0;
+  border-left:4px solid #0f6cbd;
+  border-radius:8px;
+  background:#f4f9fd;
+  color:#123456;
+  text-align:left;
+  box-shadow:0 2px 7px rgba(12,40,70,.08);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  cursor:pointer;
+  overflow:hidden;
+}
+.calendar-event:hover,.calendar-event:focus-visible{
+  z-index:25!important;
+  transform:translateY(-2px);
+  border-color:#0f6cbd;
+  box-shadow:0 8px 20px rgba(15,108,189,.22);
+}
+.calendar-event.green{border-color:#bce9d1;border-left-color:#107c41;background:#f2faf5}
+.calendar-event.blue{border-color:#bcd8f1;border-left-color:#0f6cbd;background:#f1f7fd}
+.calendar-event.amber{border-color:#fae2b6;border-left-color:#d99a32;background:#fff9ee}
+.calendar-event.red{border-color:#f7cece;border-left-color:#d13438;background:#fff4f4}
+.calendar-event.mine{border-left-color:#e3165b}
+
+.cal-card-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px}
+.cal-card-times{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#0a2540;letter-spacing:-.2px}
+.cal-card-icon{font-size:11px;font-style:normal;opacity:.9}
+.cal-card-times strong{font-weight:800}
+.cal-card-times .cal-arrow{color:#7b93ab;font-size:10px}
+.cal-badge{font-size:8px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:4px;text-transform:uppercase;white-space:nowrap;line-height:1.2}
+.cal-badge.green{background:#daf5e6;color:#0b6835;border:1px solid #b3e7c8}
+.cal-badge.blue{background:#deeffe;color:#0c5fa5;border:1px solid #badcfe}
+.cal-badge.amber{background:#fef0d2;color:#8c5600;border:1px solid #fae0a7}
+.cal-badge.red{background:#fee3e3;color:#a81c1c;border:1px solid #fccbcb}
+
+.cal-card-route{font-size:11.5px;font-weight:800;color:#081f3a;margin-bottom:5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-card-pills{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.cal-pill{display:inline-flex;align-items:center;gap:3px;font-size:8.5px;color:#486581;background:rgba(15,108,189,.07);padding:2px 6px;border-radius:4px;border:1px solid rgba(15,108,189,.12);white-space:nowrap}
+.cal-pill b{color:#0b345b;font-weight:800}
+
+.cal-card-return{display:flex;align-items:center;gap:5px;font-size:9.5px;color:#9c3008;background:#fff5ee;border:1px solid #fed8c3;padding:3px 7px;border-radius:4px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-return-icon{font-size:11px;font-weight:900;color:#d9480f}
+.cal-return-text strong{color:#8c2500;font-weight:800}
+
+.cal-card-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:8.5px;color:#55728d;border-top:1px dashed rgba(15,108,189,.16);padding-top:4px;margin-top:auto}
+.cal-owner{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cal-vehicle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#0f6cbd}
+.cal-office{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b8299}
+
+.schedule-card-detailed{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;width:100%;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;background:#fff;padding:10px 14px;text-align:left;transition:transform .15s ease,box-shadow .15s ease}
+.schedule-card-detailed:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,108,189,.12)}
+.schedule-card-detailed.green{border-left-color:#107c41;background:#fbfefc}
+.schedule-card-detailed.blue{border-left-color:#0f6cbd;background:#fbfdff}
+.schedule-card-detailed.amber{border-left-color:#d99a32;background:#fffdfa}
+.sched-times{display:flex;flex-direction:column;justify-content:center;gap:3px;font-size:11px;font-weight:800;color:#133758}
+.sched-dep{color:#0b6835}
+.sched-arr{color:#133758}
+.sched-main{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sched-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sched-route{font-size:13px;color:#081f3a;font-weight:800}
+.sched-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:9.5px;color:#556c82}
+.sched-owner{font-size:9px;color:#4f6b86}
+.sched-owner b{color:#0f3458}
+.sched-vehicle{font-size:9px;color:#0f6cbd;font-weight:700}
 
 /* Ordered multi-stop journey builder */
 .multi-stop-route{display:grid;gap:10px;padding:14px;border:1px solid #d8e2ec;border-radius:11px;background:#f8fbfe}.multi-stop-route label{position:relative}.multi-stop-route label:not(:last-of-type):after{content:"↓";position:absolute;left:10px;bottom:-15px;z-index:2;color:#0f6cbd;font-size:10px;font-weight:900}.input-with-dot.route-origin i{background:#1683d8}.input-with-dot.route-stop i{background:#f0a12a}.route-stop{display:grid;grid-template-columns:1fr auto;align-items:center}.route-stop input{grid-column:1/-1;grid-row:1}.route-stop button{grid-column:2;grid-row:1;z-index:2;margin-right:8px;width:24px;height:24px;border:0;border-radius:6px;background:#fff1f1;color:#b42318;font-size:16px}.add-stop-button{justify-self:start;border:1px dashed #8abce4;border-radius:8px;background:#eef7ff;color:#0f6cbd;padding:9px 12px;font-size:9px;font-weight:800}.route-preview{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:8px;background:#eaf4fc}.route-preview span{flex:none;color:#5d7288;font-size:8px}.route-preview strong{color:#12395d;font-size:9px;line-height:1.5}.journey-line.multi{display:flex;align-items:flex-start;overflow:hidden}.journey-line.multi .journey-point{display:flex;min-width:0;flex:1;align-items:center}.journey-line.multi .journey-point i{flex:none;width:8px;height:8px}.journey-line.multi .journey-point small{overflow:hidden;margin-left:4px;color:#60758b;font-size:7px;text-overflow:ellipsis;white-space:nowrap}.journey-line.multi .journey-point b{height:1px;min-width:10px;flex:1;background:#b8cbdc}

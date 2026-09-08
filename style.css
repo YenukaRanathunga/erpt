@@ -102,3 +102,77 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 
 /* Role-aware notification centre */
 .notification>b{position:absolute;right:-5px;top:-6px;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px;border-radius:9px;background:#c50f1f;color:#fff;border:2px solid #efefef;font-size:8px;line-height:1}.notification-panel{width:min(410px,calc(100vw - 30px));max-height:calc(100vh - 82px);display:flex;flex-direction:column}.notification-panel>header>div:first-child{display:flex;flex-direction:column;gap:3px}.notification-panel>header small{font-size:9px;color:var(--muted)}.notification-panel>header>div:last-child{display:flex;align-items:center;gap:6px}.notification-panel header .mark-read{width:auto;height:30px;padding:0 8px;background:#e5f1fb;color:#0f6cbd;font-size:9px;font-weight:700}.desktop-alert-card{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;margin:12px;padding:11px;border:1px solid #b4d6f2;border-radius:6px;background:#f3f9fd}.desktop-alert-card>span{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0f6cbd;color:#fff}.desktop-alert-card strong{font-size:10px}.desktop-alert-card p{margin:3px 0 0;color:#4f5f70;font-size:9px;line-height:1.4}.desktop-alert-card button{border:0;border-radius:4px;background:#0f6cbd;color:#fff;padding:7px 9px;font-size:9px;font-weight:700}.notification-list{overflow:auto}.notification-list>button{position:relative;width:100%;display:flex;align-items:flex-start;gap:11px;border:0;border-top:1px solid #ededed;background:#fff;padding:14px 16px;text-align:left}.notification-list>button.unread{background:#f5f9fd}.notification-list>button:hover{background:#e5f1fb}.notification-list>button p{display:flex;flex-direction:column;margin:0;padding-right:10px}.notification-list>button strong{font-size:11px}.notification-list>button small{margin-top:4px;font-size:9px;line-height:1.4;color:var(--muted)}.notification-list>button>i{position:absolute;right:14px;top:17px;width:7px;height:7px;border-radius:50%;background:#0f6cbd}.notice-icon.green{background:#dff6dd;color:#0b6a0b}.notice-icon.red{background:#fde7e9;color:#c50f1f}.notification-empty{display:grid;justify-items:center;gap:5px;padding:34px 20px;text-align:center}.notification-empty>span{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#dff6dd;color:#0b6a0b;font-weight:800}.notification-empty strong{font-size:12px}.notification-empty p{margin:0;color:var(--muted);font-size:9px}.notification-panel>footer{padding:10px 14px;border-top:1px solid #ededed;background:#fafafa;color:#68768a;font-size:8px;line-height:1.45}
+
+/* World-class Ops Board Calendar Card */
+.week-header{display:grid!important;grid-template-columns:56px repeat(5,minmax(215px,1fr))!important;min-width:1130px!important;border-bottom:1px solid var(--line)}
+.week-body{display:grid!important;grid-template-columns:56px repeat(5,minmax(215px,1fr))!important;min-width:1130px!important;height:720px!important;position:relative}
+
+.calendar-event{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  min-height:120px;
+  padding:8px 10px;
+  border:1px solid #c7dcf0;
+  border-left:4px solid #0f6cbd;
+  border-radius:8px;
+  background:#f4f9fd;
+  color:#123456;
+  text-align:left;
+  box-shadow:0 2px 7px rgba(12,40,70,.08);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  cursor:pointer;
+  overflow:hidden;
+}
+.calendar-event:hover,.calendar-event:focus-visible{
+  z-index:25!important;
+  transform:translateY(-2px);
+  border-color:#0f6cbd;
+  box-shadow:0 8px 20px rgba(15,108,189,.22);
+}
+.calendar-event.green{border-color:#bce9d1;border-left-color:#107c41;background:#f2faf5}
+.calendar-event.blue{border-color:#bcd8f1;border-left-color:#0f6cbd;background:#f1f7fd}
+.calendar-event.amber{border-color:#fae2b6;border-left-color:#d99a32;background:#fff9ee}
+.calendar-event.red{border-color:#f7cece;border-left-color:#d13438;background:#fff4f4}
+.calendar-event.mine{border-left-color:#e3165b}
+
+.cal-card-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px}
+.cal-card-times{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#0a2540;letter-spacing:-.2px}
+.cal-card-icon{font-size:11px;font-style:normal;opacity:.9}
+.cal-card-times strong{font-weight:800}
+.cal-card-times .cal-arrow{color:#7b93ab;font-size:10px}
+.cal-badge{font-size:8px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:4px;text-transform:uppercase;white-space:nowrap;line-height:1.2}
+.cal-badge.green{background:#daf5e6;color:#0b6835;border:1px solid #b3e7c8}
+.cal-badge.blue{background:#deeffe;color:#0c5fa5;border:1px solid #badcfe}
+.cal-badge.amber{background:#fef0d2;color:#8c5600;border:1px solid #fae0a7}
+.cal-badge.red{background:#fee3e3;color:#a81c1c;border:1px solid #fccbcb}
+
+.cal-card-route{font-size:11.5px;font-weight:800;color:#081f3a;margin-bottom:5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-card-pills{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.cal-pill{display:inline-flex;align-items:center;gap:3px;font-size:8.5px;color:#486581;background:rgba(15,108,189,.07);padding:2px 6px;border-radius:4px;border:1px solid rgba(15,108,189,.12);white-space:nowrap}
+.cal-pill b{color:#0b345b;font-weight:800}
+
+.cal-card-return{display:flex;align-items:center;gap:5px;font-size:9.5px;color:#9c3008;background:#fff5ee;border:1px solid #fed8c3;padding:3px 7px;border-radius:4px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-return-icon{font-size:11px;font-weight:900;color:#d9480f}
+.cal-return-text strong{color:#8c2500;font-weight:800}
+
+.cal-card-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:8.5px;color:#55728d;border-top:1px dashed rgba(15,108,189,.16);padding-top:4px;margin-top:auto}
+.cal-owner{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cal-vehicle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#0f6cbd}
+.cal-office{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b8299}
+
+.schedule-card-detailed{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;width:100%;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;background:#fff;padding:10px 14px;text-align:left;transition:transform .15s ease,box-shadow .15s ease}
+.schedule-card-detailed:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,108,189,.12)}
+.schedule-card-detailed.green{border-left-color:#107c41;background:#fbfefc}
+.schedule-card-detailed.blue{border-left-color:#0f6cbd;background:#fbfdff}
+.schedule-card-detailed.amber{border-left-color:#d99a32;background:#fffdfa}
+.sched-times{display:flex;flex-direction:column;justify-content:center;gap:3px;font-size:11px;font-weight:800;color:#133758}
+.sched-dep{color:#0b6835}
+.sched-arr{color:#133758}
+.sched-main{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sched-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sched-route{font-size:13px;color:#081f3a;font-weight:800}
+.sched-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:9.5px;color:#556c82}
+.sched-owner{font-size:9px;color:#4f6b86}
+.sched-owner b{color:#0f3458}
+.sched-vehicle{font-size:9px;color:#0f6cbd;font-weight:700}
