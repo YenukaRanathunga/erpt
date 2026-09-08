@@ -200,21 +200,91 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 .cal-vehicle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:#0f6cbd}
 .cal-office{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#6b8299}
 
-.schedule-card-detailed{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;width:100%;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;background:#fff;padding:10px 14px;text-align:left;transition:transform .15s ease,box-shadow .15s ease}
-.schedule-card-detailed:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,108,189,.12)}
-.schedule-card-detailed.green{border-left-color:#107c41;background:#fbfefc}
-.schedule-card-detailed.blue{border-left-color:#0f6cbd;background:#fbfdff}
-.schedule-card-detailed.amber{border-left-color:#d99a32;background:#fffdfa}
-.sched-times{display:flex;flex-direction:column;justify-content:center;gap:3px;font-size:11px;font-weight:800;color:#133758}
-.sched-dep{color:#0b6835}
-.sched-arr{color:#133758}
-.sched-main{display:flex;flex-direction:column;gap:6px;min-width:0}
-.sched-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sched-route{font-size:13px;color:#081f3a;font-weight:800}
-.sched-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:9.5px;color:#556c82}
-.sched-owner{font-size:9px;color:#4f6b86}
-.sched-owner b{color:#0f3458}
-.sched-vehicle{font-size:9px;color:#0f6cbd;font-weight:700}
+.schedule-view{padding:12px 24px 24px}
+.schedule-day-section{display:grid;grid-template-columns:85px minmax(0,1fr);gap:20px;border-bottom:1px solid var(--line);padding:18px 0;align-items:start}
+.schedule-day-list{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0}
+.schedule-empty-day{font-size:11px;color:#8c98a6;margin:0;padding:10px 0;font-style:italic}
+.schedule-view button.schedule-card-detailed,
+.schedule-card-detailed{
+  display:grid!important;
+  grid-template-columns:110px minmax(0,1fr)!important;
+  gap:16px!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  border:1px solid #c7dcf0!important;
+  border-left:5px solid #0f6cbd!important;
+  border-radius:9px!important;
+  background:#ffffff!important;
+  padding:14px 18px!important;
+  text-align:left!important;
+  box-shadow:0 2px 8px rgba(12,40,70,.06)!important;
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease!important;
+  cursor:pointer!important;
+}
+.schedule-card-detailed:hover{
+  transform:translateY(-2px)!important;
+  box-shadow:0 6px 18px rgba(15,108,189,.15)!important;
+  border-color:#0f6cbd!important;
+}
+.schedule-card-detailed.green{border-left-color:#107c41!important;background:#fbfefc!important}
+.schedule-card-detailed.blue{border-left-color:#0f6cbd!important;background:#fbfdff!important}
+.schedule-card-detailed.amber{border-left-color:#d99a32!important;background:#fffdfa!important}
+.schedule-card-detailed.red{border-left-color:#d13438!important;background:#fff8f8!important}
+
+.sched-times{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  gap:5px!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  color:#133758!important;
+  border-right:1px solid #edf2f7!important;
+  padding-right:12px!important;
+  white-space:nowrap!important;
+}
+.sched-dep{color:#0b6835!important;white-space:nowrap}
+.sched-arr{color:#133758!important;white-space:nowrap}
+
+.sched-main{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:8px!important;
+  min-width:0!important;
+  width:100%!important;
+}
+.sched-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  width:100%!important;
+}
+.sched-route{
+  font-size:14px!important;
+  font-weight:800!important;
+  color:#081f3a!important;
+  line-height:1.3!important;
+  word-break:break-word!important;
+}
+.sched-meta{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  font-size:10.5px!important;
+  color:#556c82!important;
+}
+.sched-return-pill{
+  margin-bottom:0!important;
+  padding:3px 8px!important;
+  font-size:10px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+}
+.sched-owner{font-size:10.5px!important;color:#4f6b86!important}
+.sched-owner b{color:#0f3458!important}
+.sched-vehicle{font-size:10.5px!important;color:#0f6cbd!important;font-weight:700!important}
 
 /* Ordered multi-stop journey builder */
 .multi-stop-route{display:grid;gap:10px;padding:14px;border:1px solid #d8e2ec;border-radius:11px;background:#f8fbfe}.multi-stop-route label{position:relative}.multi-stop-route label:not(:last-of-type):after{content:"↓";position:absolute;left:10px;bottom:-15px;z-index:2;color:#0f6cbd;font-size:10px;font-weight:900}.input-with-dot.route-origin i{background:#1683d8}.input-with-dot.route-stop i{background:#f0a12a}.route-stop{display:grid;grid-template-columns:1fr auto;align-items:center}.route-stop input{grid-column:1/-1;grid-row:1}.route-stop button{grid-column:2;grid-row:1;z-index:2;margin-right:8px;width:24px;height:24px;border:0;border-radius:6px;background:#fff1f1;color:#b42318;font-size:16px}.add-stop-button{justify-self:start;border:1px dashed #8abce4;border-radius:8px;background:#eef7ff;color:#0f6cbd;padding:9px 12px;font-size:9px;font-weight:800}.route-preview{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:8px;background:#eaf4fc}.route-preview span{flex:none;color:#5d7288;font-size:8px}.route-preview strong{color:#12395d;font-size:9px;line-height:1.5}.journey-line.multi{display:flex;align-items:flex-start;overflow:hidden}.journey-line.multi .journey-point{display:flex;min-width:0;flex:1;align-items:center}.journey-line.multi .journey-point i{flex:none;width:8px;height:8px}.journey-line.multi .journey-point small{overflow:hidden;margin-left:4px;color:#60758b;font-size:7px;text-overflow:ellipsis;white-space:nowrap}.journey-line.multi .journey-point b{height:1px;min-width:10px;flex:1;background:#b8cbdc}

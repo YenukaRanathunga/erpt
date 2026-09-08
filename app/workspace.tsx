@@ -815,7 +815,7 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
             <span className="cal-owner" title={event.owner}>👤 {event.owner===currentUser?`${event.owner} (You)`:event.owner}</span>
             {event.vehicleCompany ? <span className="cal-vehicle" title={event.vehicleCompany}>🏢 {event.vehicleCompany}</span> : <span className="cal-office" title={event.office}>📍 {event.office}</span>}
           </div>
-        </button>;})}</div>;})}</div></div> : <div className="schedule-view">{days.map((day,dayIndex)=><section key={day.key}><div className="schedule-date"><strong>{day.date}</strong><span>{day.name}<small>{day.value.toLocaleDateString("en-US",{month:"long"}).toUpperCase()}</small></span></div><div>{visibleEvents.filter(item=>item.day===dayIndex).length ? visibleEvents.filter(item=>item.day===dayIndex).map(event=><button key={event.id} onClick={()=>setSelectedId(event.id)} className={`schedule-card-detailed ${event.tone}`}>
+        </button>;})}</div>;})}</div></div> : <div className="schedule-view">{days.map((day,dayIndex)=><section key={day.key} className="schedule-day-section"><div className="schedule-date"><strong>{day.date}</strong><span>{day.name}<small>{day.value.toLocaleDateString("en-US",{month:"long"}).toUpperCase()}</small></span></div><div className="schedule-day-list">{visibleEvents.filter(item=>item.day===dayIndex).length ? visibleEvents.filter(item=>item.day===dayIndex).map(event=><button key={event.id} onClick={()=>setSelectedId(event.id)} className={`schedule-card-detailed ${event.tone}`}>
           <div className="sched-times">
             <span className="sched-dep">🛫 {event.time}</span>
             <span className="sched-arr">🛬 {event.end}</span>
@@ -828,15 +828,15 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
             <div className="sched-meta">
               <span className="cal-pill">REF: <b>{event.id}</b></span>
               <span className="cal-pill">PAX: <b>{event.passengers}</b></span>
-              <span className="cal-card-return">
+              {event.returnDate && <span className="cal-card-return sched-return-pill">
                 <span className="cal-return-icon">↩</span>
                 <span>Return: <strong>{event.returnDate} · {event.returnTime}</strong></span>
-              </span>
+              </span>}
               <span className="sched-owner">👤 <b>{event.owner}</b></span>
-              {event.vehicleCompany && <span className="sched-vehicle">🏢 <b>{event.vehicleCompany}</b></span>}
+              {event.vehicleCompany ? <span className="sched-vehicle">🏢 <b>{event.vehicleCompany}</b></span> : <span className="cal-office">📍 {event.office}</span>}
             </div>
           </div>
-        </button>) : <p>No trips scheduled</p>}</div></section>)}</div>}
+        </button>) : <p className="schedule-empty-day">No trips scheduled</p>}</div></section>)}</div>}
         {selected && <div className="trip-modal-backdrop">
           <section className="trip-modal" role="dialog" aria-modal="true" aria-labelledby="trip-modal-title">
             <button className="trip-modal-close" aria-label="Close trip details" onClick={()=>setSelectedId(null)}>×</button>
