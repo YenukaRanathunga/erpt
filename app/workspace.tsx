@@ -311,7 +311,6 @@ function Login({ onLogin, offices, admins, staff }: { onLogin: (role: Role, admi
       <div className="login-brand"><img className="official-logo" src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change"/></div>
       <div className="login-message"><p className="eyebrow">TRANSPORT OPERATIONS PLATFORM</p><h1>Every request.<br/>One clear journey.</h1><p>Plan, approve and coordinate staff travel through one controlled operational workflow.</p></div>
       <div className="login-flow"><div><b>01</b><span><strong>Request</strong><small>Journey and budget</small></span></div><i/><div><b>02</b><span><strong>Approve</strong><small>Role-based control</small></span></div><i/><div><b>03</b><span><strong>Operate</strong><small>Merge and complete</small></span></div></div>
-      <p className="login-security"><span>✓</span> Private company access · Complete activity history</p>
     </section>
     <section className="login-panel-wrap">
       <form className="login-card" onSubmit={submitLogin}>

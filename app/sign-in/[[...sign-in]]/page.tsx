@@ -18,7 +18,6 @@ export default async function SignInPage() {
         <span>Plan, approve and coordinate staff travel through one calm, controlled operational workspace.</span>
         <div className="cinema-steps"><article><b>01</b><div><strong>Request</strong><small>Journey &amp; budget</small></div></article><i/><article><b>02</b><div><strong>Approve</strong><small>Role-based control</small></div></article><i/><article><b>03</b><div><strong>Operate</strong><small>Dispatch &amp; complete</small></div></article></div>
       </div>
-      <footer><span>✓</span> Private company access · Complete activity history</footer>
     </section>
     <section className="login-cinema-panel">
       <div className="login-cinema-card">
