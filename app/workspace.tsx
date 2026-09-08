@@ -742,14 +742,34 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
     });
     const layoutMap = new Map<string, { top: number; height: number }>();
     let nextAvailableTop = 0;
-    const CARD_HEIGHT = 142;
-    const CARD_GAP = 10;
+    const CARD_GAP = 12;
+
+    const calcCardHeight = (ev: CalendarEvent) => {
+      const routeText = (ev.route || "").trim();
+      let routeLines = 1;
+      if (routeText.length > 46) {
+        routeLines = 3;
+      } else if (routeText.length > 22) {
+        routeLines = 2;
+      }
+
+      let h = 122; // base comfortable height
+      if (routeLines === 2) h += 28;
+      else if (routeLines === 3) h += 52;
+
+      if (ev.returnDate) {
+        h += 34; // return date banner
+      }
+
+      return h;
+    };
 
     sorted.forEach(ev => {
+      const cardH = calcCardHeight(ev);
       const targetTop = eventTop(ev.time);
       const top = Math.max(targetTop, nextAvailableTop);
-      layoutMap.set(ev.id, { top, height: CARD_HEIGHT });
-      nextAvailableTop = top + CARD_HEIGHT + CARD_GAP;
+      layoutMap.set(ev.id, { top, height: cardH });
+      nextAvailableTop = top + cardH + CARD_GAP;
     });
 
     return layoutMap;
@@ -761,8 +781,8 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
       const dayEvents = visibleEvents.filter(item => item.day === dayIndex);
       const layouts = getDayEventLayouts(dayEvents);
       layouts.forEach(l => {
-        if (l.top + l.height + 30 > max) {
-          max = l.top + l.height + 30;
+        if (l.top + l.height + 40 > max) {
+          max = l.top + l.height + 40;
         }
       });
     });
@@ -772,7 +792,7 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
   return <><PageTitle eyebrow="SHARED MOBILITY CALENDAR" title="Trips calendar" subtitle="See your journeys and the wider team schedule in a familiar Outlook-style calendar." action={<button className="primary" onClick={onNew}>＋ New vehicle request</button>} />
     <div className="calendar-shell"><aside className="panel calendar-sidebar"><button className="calendar-new" onClick={onNew}>＋ New request</button><div className="mini-calendar"><div><button aria-label="Previous month" onClick={()=>setMonthOffset(value=>value-1)}>‹</button><strong>{miniMonth}</strong><button aria-label="Next month" onClick={()=>setMonthOffset(value=>value+1)}>›</button></div><div className="mini-weekdays">{["M","T","W","T","F","S","S"].map((day,index)=><span key={`${day}-${index}`}>{day}</span>)}</div><div className="mini-days">{Array.from({length:42},(_,index)=>{const date=index-miniLeadingDays+1;const valid=date>0&&date<=miniDaysInMonth;return <button key={index} onClick={()=>{if(valid){const chosen=new Date(miniDate.getFullYear(),miniDate.getMonth(),date);const chosenWeek=startOfWorkWeek(chosen);setWeekOffset(Math.round((chosenWeek.getTime()-baseWeekStart.getTime())/604800000));setSelectedMiniDate(date);setSelectedId(null);announce(`Calendar date ${date} ${miniMonth} selected.`)}}} className={valid&&date===selectedMiniDate&&miniDate.getMonth()===weekStart.getMonth()?"today":!valid?"muted":""}>{valid?date:""}</button>})}</div></div><div className="calendar-lists"><p>MY CALENDARS</p><label><input type="checkbox" checked={showMine} onChange={event=>setShowMine(event.target.checked)}/><i className="mine"/><span>My trips</span><b>{calendarEvents.filter(item=>item.owner===currentUser).length}</b></label><label><input type="checkbox" checked={showTeam} onChange={event=>setShowTeam(event.target.checked)}/><i className="team"/><span>Team trips</span><b>{calendarEvents.filter(item=>item.owner!==currentUser).length}</b></label></div><div className="calendar-legend"><p>STATUS</p><span><i className="green"/>Approved</span><span><i className="blue"/>Scheduled</span>{!approvedOnly && <span><i className="amber"/>Awaiting approval</span>}</div><div className="calendar-tip"><span>i</span><p>{approvedOnly ? "Only approved and scheduled journeys are shown to requesters." : "Team calendars show journey timing and coordination details without exposing budget information."}</p></div></aside>
       <section className="panel calendar-main"><div className="calendar-toolbar"><div><button onClick={()=>{setWeekOffset(0);setSelectedId(null)}}>Today</button><button aria-label="Previous week" onClick={()=>{setWeekOffset(value=>value-1);setSelectedId(null)}}>‹</button><button aria-label="Next week" onClick={()=>{setWeekOffset(value=>value+1);setSelectedId(null)}}>›</button><h2>{weekLabel}</h2></div><div className="calendar-view-switch"><button className={mode==="week"?"active":""} onClick={()=>setMode("week")}>Work week</button><button className={mode==="schedule"?"active":""} onClick={()=>setMode("schedule")}>Schedule</button></div></div>
-        {mode === "week" ? <div className="week-calendar"><div className="week-header"><span/><>{days.map(day=><div key={day.key} className={day.key===dateKey(new Date())?"today":""}><small>{day.name}</small><strong>{day.date}</strong></div>)}</></div><div className="week-body" style={{minHeight:`${maxCalendarHeight}px`}}><div className="time-axis" style={{minHeight:`${maxCalendarHeight}px`}}>{hours.map(hour=><span key={hour}>{String(hour).padStart(2,"0")}:00</span>)}</div>{days.map((day,dayIndex)=>{const dayEvents=visibleEvents.filter(item=>item.day===dayIndex).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id));const dayLayouts=getDayEventLayouts(dayEvents);return <div className={`day-column ${day.key===dateKey(new Date())?"today":""}`} key={day.key} style={{minHeight:`${maxCalendarHeight}px`}}>{hours.map(hour=><i key={hour}/>)}{dayEvents.map(event=>{const pos=dayLayouts.get(event.id);return <button key={event.id} title={`${event.time}–${event.end} · ${event.route} · Return: ${event.returnDate} ${event.returnTime} · ${event.owner}`} aria-label={`${event.route}, ${event.time} to ${event.end}, Return: ${event.returnDate} ${event.returnTime}, ${event.owner}`} className={`calendar-event ${event.owner===currentUser?"mine":"team"} ${event.tone}`} style={{top:`${pos?.top ?? eventTop(event.time)}px`,height:`${pos?.height ?? 142}px`}} onClick={()=>setSelectedId(event.id)}>
+        {mode === "week" ? <div className="week-calendar"><div className="week-header"><span/><>{days.map(day=><div key={day.key} className={day.key===dateKey(new Date())?"today":""}><small>{day.name}</small><strong>{day.date}</strong></div>)}</></div><div className="week-body" style={{minHeight:`${maxCalendarHeight}px`}}><div className="time-axis" style={{minHeight:`${maxCalendarHeight}px`}}>{hours.map(hour=><span key={hour}>{String(hour).padStart(2,"0")}:00</span>)}</div>{days.map((day,dayIndex)=>{const dayEvents=visibleEvents.filter(item=>item.day===dayIndex).sort((a,b)=>eventMinutes(a.time)-eventMinutes(b.time)||a.id.localeCompare(b.id));const dayLayouts=getDayEventLayouts(dayEvents);return <div className={`day-column ${day.key===dateKey(new Date())?"today":""}`} key={day.key} style={{minHeight:`${maxCalendarHeight}px`}}>{hours.map(hour=><i key={hour}/>)}{dayEvents.map(event=>{const pos=dayLayouts.get(event.id);return <button key={event.id} title={`${event.time}–${event.end} · ${event.route} · Return: ${event.returnDate} ${event.returnTime} · ${event.owner}`} aria-label={`${event.route}, ${event.time} to ${event.end}, Return: ${event.returnDate} ${event.returnTime}, ${event.owner}`} className={`calendar-event ${event.owner===currentUser?"mine":"team"} ${event.tone}`} style={{top:`${pos?.top ?? eventTop(event.time)}px`,height:`${pos?.height ?? 168}px`}} onClick={()=>setSelectedId(event.id)}>
           <div className="cal-card-head">
             <span className="cal-card-times">
               <i className="cal-card-icon">🚗</i>
