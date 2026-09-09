@@ -1134,10 +1134,74 @@ function Reports({ requests, office, offices, canViewAll }: { requests: RequestI
 
 return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics" subtitle={canViewAll ? "Colombo administration overview across every office." : `Restricted to ${office} records only.`} action={<div className="report-header-actions"><button className="secondary" onClick={exportAttendanceReport}>Export attendance <span>↓</span></button><button className="primary" onClick={exportReport}>Export completed trips <span>↓</span></button></div>} />
     <section className={`scope-notice ${canViewAll ? "all-scope" : ""}`}><span>{canViewAll ? "◎" : "⌂"}</span><div><strong>{canViewAll ? "All-office access" : "Office-restricted access"}</strong><p>{canViewAll ? "Colombo Head Office Admin can review all branches or narrow the report to one office." : `You can only view requests, status and reports belonging to ${office}.`}</p></div><b>{canViewAll ? "COLOMBO ADMIN" : office.toUpperCase()}</b></section>
-    <div className="report-subtabs-bar"><div className="admin-tabs report-subtabs"><button className={reportTab === "overview" ? "active" : ""} onClick={() => setReportTab("overview")}>📊 Executive Overview</button><button className={reportTab === "routes" ? "active" : ""} onClick={() => setReportTab("routes")}>🗺️ Route & Destination Analytics</button><button className={reportTab === "travellers" ? "active" : ""} onClick={() => setReportTab("travellers")}>👤 Travellers & Schedule Trends</button><button className={reportTab === "attendance" ? "active" : ""} onClick={() => setReportTab("attendance")}>📋 Passenger Attendance Manifest ({attendanceRegistry.length})</button></div></div>
-    <div className="report-toolbar advanced"><div className="report-filter-section"><span className="filter-label">PERIOD:</span><div className="filter-group"><button className={`filter ${periodMode === "all" ? "active" : ""}`} onClick={() => setPeriodMode("all")}>All time</button><button className={`filter ${periodMode === "monthly" ? "active" : ""}`} onClick={() => setPeriodMode("monthly")}>Monthly</button><button className={`filter ${periodMode === "yearly" ? "active" : ""}`} onClick={() => setPeriodMode("yearly")}>Yearly</button><button className={`filter ${periodMode === "custom" ? "active" : ""}`} onClick={() => { setPeriodMode("custom"); announce("Custom date range filter enabled."); }}>Custom range</button></div>{periodMode === "monthly" && <div className="period-sub-controls"><select aria-label="Select month" value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>{monthNames.map((name, idx) => <option key={name} value={idx}>{name}</option>)}</select><select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>{availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}</select></div>}{periodMode === "yearly" && <div className="period-sub-controls"><select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>{availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}</select></div>}{periodMode === "custom" && <div className="period-sub-controls date-inputs"><label><span>From:</span><input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} /></label><label><span>To:</span><input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} /></label></div>}</div><div className="report-secondary-filters"><select aria-label="Report office" value={officeFilter} disabled={!canViewAll} onChange={event => setOfficeFilter(event.target.value)}>{canViewAll && <option>All offices</option>}{offices.map(item => <option key={item}>{item}</option>)}</select><select aria-label="Report status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option>All statuses</option>{requestStatuses.map(status => <option key={status}>{status}</option>)}</select></div></div>
-    <section className="metric-grid reports"><article className="metric-card"><span>Total requests</span><strong>{scopedRequests.length}</strong><p>Within permitted scope</p></article><article className="metric-card"><span>Completed trips</span><strong>{completedTrips.length}</strong><p><b className="up">Closed by Admin</b></p></article><article className="metric-card"><span>Total mileage</span><strong>{totalMileage.toLocaleString()} <small>km</small></strong><p>Actual distance</p></article><article className="metric-card"><span>Full trip cost</span><strong><small>LKR</small> {totalPrice.toLocaleString()}</strong><p>Combined totals</p></article></section>
+    {/* NAVIGATION SUBTABS */}
+    <div className="report-subtabs-bar">
+      <div className="admin-tabs report-subtabs">
+        <button className={reportTab === "overview" ? "active" : ""} onClick={() => setReportTab("overview")}>Executive Overview</button>
+        <button className={reportTab === "routes" ? "active" : ""} onClick={() => setReportTab("routes")}>Route & Destination Analytics</button>
+        <button className={reportTab === "travellers" ? "active" : ""} onClick={() => setReportTab("travellers")}>Traveller & Schedule Trends</button>
+        <button className={reportTab === "attendance" ? "active" : ""} onClick={() => setReportTab("attendance")}>Passenger Attendance Manifest ({attendanceRegistry.length})</button>
+      </div>
+    </div>
 
+    {/* UNIVERSAL REPORT FILTERS */}
+    <div className="report-toolbar advanced">
+      <div className="report-filter-section">
+        <span className="filter-label">PERIOD:</span>
+        <div className="filter-group">
+          <button className={`filter ${periodMode === "all" ? "active" : ""}`} onClick={() => setPeriodMode("all")}>All time</button>
+          <button className={`filter ${periodMode === "monthly" ? "active" : ""}`} onClick={() => setPeriodMode("monthly")}>Monthly</button>
+          <button className={`filter ${periodMode === "yearly" ? "active" : ""}`} onClick={() => setPeriodMode("yearly")}>Yearly</button>
+          <button className={`filter ${periodMode === "custom" ? "active" : ""}`} onClick={() => { setPeriodMode("custom"); announce("Custom date range filter enabled."); }}>Custom range</button>
+        </div>
+
+        {/* Dynamic Period Selectors */}
+        {periodMode === "monthly" && <div className="period-sub-controls">
+          <select aria-label="Select month" value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
+            {monthNames.map((name, idx) => <option key={name} value={idx}>{name}</option>)}
+          </select>
+          <select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+            {availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+          </select>
+          <button className="period-preset" onClick={() => { setSelectedYear(2026); setSelectedMonth(7); }}>This month (Aug)</button>
+          <button className="period-preset" onClick={() => { setSelectedYear(2026); setSelectedMonth(6); }}>Last month (Jul)</button>
+        </div>}
+
+        {periodMode === "yearly" && <div className="period-sub-controls">
+          <select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+            {availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+          </select>
+          <button className="period-preset" onClick={() => setSelectedYear(2026)}>Current Year (2026)</button>
+        </div>}
+
+        {periodMode === "custom" && <div className="period-sub-controls date-inputs">
+          <label><span>From:</span><input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} /></label>
+          <label><span>To:</span><input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} /></label>
+          {(customFrom || customTo) && <button className="period-preset" onClick={() => { setCustomFrom(""); setCustomTo(""); }}>Reset dates</button>}
+        </div>}
+      </div>
+
+      <div className="report-secondary-filters">
+        <select aria-label="Report office" value={officeFilter} disabled={!canViewAll} onChange={event => setOfficeFilter(event.target.value)}>
+          {canViewAll && <option>All offices</option>}
+          {offices.map(item => <option key={item}>{item}</option>)}
+        </select>
+        <select aria-label="Report status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+          <option>All statuses</option>
+          {requestStatuses.map(status => <option key={status}>{status}</option>)}
+        </select>
+      </div>
+    </div>
+
+    {/* METRIC SUMMARY CARDS */}
+    <section className="metric-grid reports">
+      <article className="metric-card"><span>Total requests</span><strong>{scopedRequests.length}</strong><p>{periodMode === "all" ? "All-time register" : periodMode === "monthly" ? `${monthNames[selectedMonth]} ${selectedYear}` : periodMode === "yearly" ? `Year ${selectedYear}` : "Custom range"}</p></article>
+      <article className="metric-card"><span>Completed trips</span><strong>{completedTrips.length}</strong><p><b className="up">Closed by Admin</b></p></article>
+      <article className="metric-card"><span>Total mileage</span><strong>{totalMileage.toLocaleString()} <small>km</small></strong><p>Actual completed-trip distance</p></article>
+      <article className="metric-card"><span>Full trip cost</span><strong><small>LKR</small> {totalPrice.toLocaleString()}</strong><p>Trip, highway, per diem & other costs</p></article>
+    </section>
+
+    {/* TAB 1: EXECUTIVE OVERVIEW & FINANCIALS */}
     {reportTab === "overview" && <>
       <div className="reports-grid">
         <article className="panel chart-panel">
@@ -1234,10 +1298,10 @@ return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics"
                       <div className="route-progress-fill" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="route-rank-footer">
-                      <span>👥 <b>{routeItem.passengers}</b> total passengers</span>
-                      <span>📍 Destination: <b>{routeItem.destination}</b></span>
-                      {routeItem.mileage > 0 && <span>🚗 <b>{routeItem.mileage.toLocaleString()}</b> km</span>}
-                      {routeItem.cost > 0 && <span>💰 <b>LKR {routeItem.cost.toLocaleString()}</b></span>}
+                      <span>Passengers: <b>{routeItem.passengers}</b></span>
+                      <span>Destination: <b>{routeItem.destination}</b></span>
+                      {routeItem.mileage > 0 && <span>Distance: <b>{routeItem.mileage.toLocaleString()} km</b></span>}
+                      {routeItem.cost > 0 && <span>Total: <b>LKR {routeItem.cost.toLocaleString()}</b></span>}
                     </div>
                   </div>
                 </div>
@@ -1255,7 +1319,7 @@ return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics"
           <p>Analyze who travels the most frequently and determine peak departure days across operations.</p>
         </div>
         <div className="peak-day-badge">
-          <span>📅 PEAK TRAVEL DAY</span>
+          <span>PEAK TRAVEL DAY</span>
           <strong>{weekdayStats.peakDay?.name ?? "Monday"}</strong>
           <small>{weekdayStats.peakDay?.count ?? 0} journeys recorded</small>
         </div>
@@ -1293,8 +1357,8 @@ return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics"
           <div className="traveller-leaderboard-list">
             {travellerStats.length ? travellerStats.slice(0, 10).map((t, index) => (
               <div className="traveller-card" key={t.name}>
-                <div className={`traveller-rank ${index < 3 ? `top-${index + 1}` : ""}`}>
-                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
+                <div className="traveller-rank">
+                  #{index + 1}
                 </div>
                 <div className="traveller-avatar">{t.name.split(" ").map(w => w[0]).slice(0, 2).join("")}</div>
                 <div className="traveller-details">
@@ -1364,7 +1428,7 @@ return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics"
                   </td>
                   <td>
                     <span className={`role-chip ${rec.role.toLowerCase()}`}>
-                      {rec.role === "Requester" ? "★ Lead / Requester" : "👥 Passenger"}
+                      {rec.role === "Requester" ? "Lead Requester" : "Passenger"}
                     </span>
                   </td>
                   <td>
