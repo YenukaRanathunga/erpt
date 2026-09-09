@@ -905,49 +905,517 @@ function VehicleManagement({ vehicles, office, offices, canViewAll, onAdd, onUpd
   return <><PageTitle eyebrow="ADMIN FLEET CONTROL" title="Vehicle companies" subtitle="Add vehicle companies and manage availability for trip planning and emergency replacements." action={<button className="primary" onClick={()=>setShowAdd(value=>!value)}>{showAdd?"× Cancel":"＋ Add vehicle company"}</button>} />
     <section className="vehicle-metrics"><article><span>Total companies</span><strong>{visible.length}</strong></article><article><span>Available</span><strong>{visible.filter(item=>item.status==="Available").length}</strong></article><article><span>Out of service</span><strong>{visible.filter(item=>item.status==="Out of service").length}</strong></article></section>
     {showAdd && <form className="panel vehicle-add-form" onSubmit={addVehicle}><div className="panel-head"><div><h2>Add new vehicle company</h2><p>The vehicle company becomes available immediately in Trip Planning.</p></div><Status tone="blue">NEW VEHICLE COMPANY</Status></div><div className="vehicle-form-grid"><label className="wide"><span>Vehicle company name *</span><input value={company} onChange={event=>setCompany(event.target.value)} placeholder="Example: Kangaroo Cabs / Malkey Rent A Car" required autoFocus /></label></div><div className="vehicle-form-actions"><button className="secondary" type="button" onClick={()=>setShowAdd(false)}>Cancel</button><button className="primary" type="submit">Save vehicle company</button></div></form>}
-    <section className="panel vehicle-register"><div className="panel-head"><div><h2>Vehicle company register</h2><p>Only Available vehicle companies can be selected for a new trip or breakdown replacement.</p></div><select aria-label="Vehicle office filter" value={officeFilter} disabled={!canViewAll} onChange={event=>setOfficeFilter(event.target.value)}>{canViewAll&&<option>All offices</option>}{offices.map(item=><option key={item}>{item}</option>)}</select></div><div className="vehicle-card-grid">{visible.map(vehicle=>{const name=vehicle.company||vehicle.registration;const initials=name.split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"VC";return <article key={vehicle.id}><div className="vehicle-card-top"><span>{initials}</span><div><strong>{name}</strong><p>Registered transport partner</p></div><div className="vehicle-card-controls"><Status tone={vehicle.status==="Available"?"green":"red"}>{vehicle.status}</Status><button onClick={()=>setEditingVehicle({...vehicle})}>Edit company</button></div></div><label><span>Company status</span><select value={vehicle.status} onChange={event=>onUpdate(vehicle.id,{status:event.target.value as VehicleStatus})}><option>Available</option><option>Out of service</option></select></label></article>;})}</div></section>
-    {editingVehicle && <div className="vehicle-edit-backdrop" role="dialog" aria-modal="true" aria-label={`Edit ${editingVehicle.company || editingVehicle.registration}`}><form className="vehicle-edit-dialog" onSubmit={saveVehicleEdits}><header><div><p className="eyebrow">COMPANY RECORD</p><h2>Edit vehicle company</h2><span>Update the vehicle company details used across trip planning.</span></div><button type="button" aria-label="Close vehicle editor" onClick={()=>setEditingVehicle(null)}>×</button></header><div className="vehicle-form-grid"><label className="wide"><span>Vehicle company name *</span><input value={editingVehicle.company ?? editingVehicle.registration} onChange={event=>changeEditingVehicle({company:event.target.value,registration:event.target.value})} required /></label><label className="wide"><span>Company status *</span><select value={editingVehicle.status} onChange={event=>changeEditingVehicle({status:event.target.value as VehicleStatus})}><option>Available</option><option>Out of service</option></select></label></div><footer><button className="secondary" type="button" onClick={()=>setEditingVehicle(null)}>Cancel</button><button className="primary" type="submit">Save company changes</button></footer></form></div>}
+{editingVehicle && <div className="vehicle-edit-backdrop" role="dialog" aria-modal="true" aria-label={`Edit ${editingVehicle.company || editingVehicle.registration}`}><form className="vehicle-edit-dialog" onSubmit={saveVehicleEdits}><header><div><p className="eyebrow">COMPANY RECORD</p><h2>Edit vehicle company</h2><span>Update the vehicle company details used across trip planning.</span></div><button type="button" aria-label="Close vehicle editor" onClick={()=>setEditingVehicle(null)}>×</button></header><div className="vehicle-form-grid"><label className="wide"><span>Vehicle company name *</span><input value={editingVehicle.company ?? editingVehicle.registration} onChange={event=>changeEditingVehicle({company:event.target.value,registration:event.target.value})} required /></label><label className="wide"><span>Company status *</span><select value={editingVehicle.status} onChange={event=>changeEditingVehicle({status:event.target.value as VehicleStatus})}><option>Available</option><option>Out of service</option></select></label></div><footer><button className="secondary" type="button" onClick={()=>setEditingVehicle(null)}>Cancel</button><button className="primary" type="submit">Save company changes</button></footer></form></div>}
   </>;
 }
 
 function Reports({ requests, office, offices, canViewAll }: { requests: RequestItem[]; office: string; offices: string[]; canViewAll: boolean }) {
   const [officeFilter, setOfficeFilter] = useState(canViewAll ? "All offices" : office);
-  const [period,setPeriod] = useState<"month"|"last"|"custom">("month");
-  const [statusFilter,setStatusFilter] = useState("All statuses");
-  const [selectedReport,setSelectedReport] = useState<RequestItem | null>(null);
+  const [periodMode, setPeriodMode] = useState<"all" | "monthly" | "yearly" | "custom">("all");
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<number>(7); // 7 = August
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState("All statuses");
+  const [reportTab, setReportTab] = useState<"overview" | "routes" | "travellers" | "attendance">("overview");
+  const [selectedReport, setSelectedReport] = useState<RequestItem | null>(null);
+  const [attendanceSearch, setAttendanceSearch] = useState<string>("");
+  const [routeSearch, setRouteSearch] = useState<string>("");
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const availableYears = [2024, 2025, 2026, 2027];
+
+  const parseRequestDate = (item: RequestItem): Date | null => {
+    if (item.completedAt) {
+      const d = new Date(item.completedAt);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    if (item.requestDate) {
+      const d = new Date(item.requestDate);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    if (item.date) {
+      const clean = item.date.trim();
+      const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      const dmy = clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/);
+      if (dmy) return new Date(Number(dmy[3] ?? 2026), Number(dmy[2] - 1), Number(dmy[1]));
+      const monthDay = clean.match(/^(\d{1,2})\s+([A-Za-z]+)(?:\s+(\d{4}))?$/);
+      if (monthDay) {
+        const shortMonths = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        const mIdx = shortMonths.findIndex(m => monthDay[2].toLowerCase().startsWith(m));
+        if (mIdx >= 0) return new Date(Number(monthDay[3] ?? 2026), mIdx, Number(monthDay[1]));
+      }
+      const d = new Date(/\b\d{4}\b/.test(clean) ? clean : `${clean} 2026`);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    const idMatch = item.id.match(/^VR-(\d{2})(\d{2})(\d{2})-/i);
+    if (idMatch) {
+      return new Date(2000 + Number(idMatch[1]), Number(idMatch[2]) - 1, Number(idMatch[3]));
+    }
+    return null;
+  };
+
+  const isWithinPeriod = (item: RequestItem): boolean => {
+    if (periodMode === "all") return true;
+    const d = parseRequestDate(item);
+    if (!d) return true;
+    if (periodMode === "monthly") {
+      return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
+    }
+    if (periodMode === "yearly") {
+      return d.getFullYear() === selectedYear;
+    }
+    if (periodMode === "custom") {
+      if (customFrom) {
+        const fromD = new Date(customFrom);
+        fromD.setHours(0, 0, 0, 0);
+        if (d < fromD) return false;
+      }
+      if (customTo) {
+        const toD = new Date(customTo);
+        toD.setHours(23, 59, 59, 999);
+        if (d > toD) return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
   const officeRequests = officeFilter === "All offices" ? requests : requests.filter(item => officeForRequest(item) === officeFilter);
-  const scopedRequests = statusFilter === "All statuses" ? officeRequests : officeRequests.filter(item=>item.status===statusFilter);
+  const periodRequests = officeRequests.filter(isWithinPeriod);
+  const scopedRequests = statusFilter === "All statuses" ? periodRequests : periodRequests.filter(item => item.status === statusFilter);
+
   const approved = scopedRequests.filter(item => item.status === "Approved" || item.status === "Completed").length;
   const scheduled = scopedRequests.filter(item => item.status === "Trip scheduled").length;
   const attention = scopedRequests.filter(item => item.status === "Awaiting approval" || item.status === "Needs revision").length;
   const completedTrips = scopedRequests.filter(item => item.status === "Completed");
-  const totalMileage = completedTrips.reduce((total,item) => total + (item.mileageKm ?? 0),0);
-  const totalPrice = completedTrips.reduce((total,item) => total + (item.finalPriceLkr ?? 0),0);
+  const totalMileage = completedTrips.reduce((total, item) => total + (item.mileageKm ?? 0), 0);
+  const totalPrice = completedTrips.reduce((total, item) => total + (item.finalPriceLkr ?? 0), 0);
   const completionRate = scopedRequests.length ? Math.round(((approved + scheduled) / scopedRequests.length) * 100) : 0;
-  const chartValues = [attention,approved,scheduled,completedTrips.length];
-  const chartMaximum = Math.max(1,...chartValues);
+  const chartValues = [attention, approved, scheduled, completedTrips.length];
+  const chartMaximum = Math.max(1, ...chartValues);
+
+  const routeStats = useMemo(() => {
+    const map = new Map<string, { route: string; destination: string; origin: string; count: number; completedCount: number; passengers: number; mileage: number; cost: number; sampleOffice: string; }>();
+
+    scopedRequests.forEach(req => {
+      const route = req.route.trim();
+      const stops = route.split("→").map(s => s.trim()).filter(Boolean);
+      const origin = stops[0] || "Unknown";
+      const destination = stops.length > 2 && stops[stops.length - 1].toLowerCase() === stops[0].toLowerCase() ? stops[1] : stops[stops.length - 1] || route;
+
+      const existing = map.get(route) || { route, destination, origin, count: 0, completedCount: 0, passengers: 0, mileage: 0, cost: 0, sampleOffice: officeForRequest(req) };
+
+      existing.count += 1;
+      if (req.status === "Completed") existing.completedCount += 1;
+      existing.passengers += (req.passengers?.length || 1);
+      existing.mileage += (req.mileageKm || 0);
+      existing.cost += (req.finalPriceLkr || 0);
+
+      map.set(route, existing);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.count - a.count || b.passengers - a.passengers);
+  }, [scopedRequests]);
+
+  const topDestinations = useMemo(() => {
+    const map = new Map<string, { city: string; count: number; passengers: number }>();
+    routeStats.forEach(item => {
+      const city = item.destination;
+      const existing = map.get(city) || { city, count: 0, passengers: 0 };
+      existing.count += item.count;
+      existing.passengers += item.passengers;
+      map.set(city, existing);
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [routeStats]);
+
+  const maxRouteCount = Math.max(1, ...routeStats.map(r => r.count));
+
+  const travellerStats = useMemo(() => {
+    const map = new Map<string, { name: string; empNo?: string; position?: string; office: string; project?: string; requestedCount: number; completedCount: number; totalJourneys: number; passengersCarried: number; mileage: number; }>();
+
+    scopedRequests.forEach(req => {
+      const staff = staffMembers.find(s => s.name.toLowerCase() === req.person.toLowerCase());
+      const existing = map.get(req.person) || { name: req.person, empNo: req.requesterEmpNo || staff?.empNo, position: req.requesterPosition || staff?.position, office: officeForRequest(req), project: req.requesterProject || staff?.project, requestedCount: 0, completedCount: 0, totalJourneys: 0, passengersCarried: 0, mileage: 0 };
+
+      existing.requestedCount += 1;
+      existing.totalJourneys += 1;
+      if (req.status === "Completed") {
+        existing.completedCount += 1;
+        existing.mileage += (req.mileageKm || 0);
+      }
+      existing.passengersCarried += (req.passengers?.length || 1);
+      map.set(req.person, existing);
+
+      (req.passengers || []).forEach(pax => {
+        if (pax.toLowerCase() === req.person.toLowerCase()) return;
+        const paxStaff = staffMembers.find(s => s.name.toLowerCase() === pax.toLowerCase());
+        const pExisting = map.get(pax) || { name: pax, empNo: paxStaff?.empNo, position: paxStaff?.position, office: paxStaff?.office || officeForRequest(req), project: paxStaff?.project, requestedCount: 0, completedCount: 0, totalJourneys: 0, passengersCarried: 0, mileage: 0 };
+        pExisting.totalJourneys += 1;
+        if (req.status === "Completed") {
+          pExisting.completedCount += 1;
+          pExisting.mileage += (req.mileageKm || 0);
+        }
+        map.set(pax, pExisting);
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.totalJourneys - a.totalJourneys || b.requestedCount - a.requestedCount);
+  }, [scopedRequests]);
+
+  const weekdayStats = useMemo(() => {
+    const days = [{ name: "Monday", short: "Mon", count: 0 }, { name: "Tuesday", short: "Tue", count: 0 }, { name: "Wednesday", short: "Wed", count: 0 }, { name: "Thursday", short: "Thu", count: 0 }, { name: "Friday", short: "Fri", count: 0 }, { name: "Saturday", short: "Sat", count: 0 }, { name: "Sunday", short: "Sun", count: 0 }];
+
+    scopedRequests.forEach(req => {
+      const d = parseRequestDate(req);
+      if (!d) return;
+      const dayIndex = (d.getDay() + 6) % 7;
+      if (days[dayIndex]) days[dayIndex].count += 1;
+    });
+
+    const maxDayCount = Math.max(1, ...days.map(d => d.count));
+    const totalDaysTrips = days.reduce((sum, d) => sum + d.count, 0);
+    const peakDay = [...days].sort((a, b) => b.count - a.count)[0];
+
+    return { days, maxDayCount, totalDaysTrips, peakDay };
+  }, [scopedRequests]);
+
+  const attendanceRegistry = useMemo(() => {
+    type RecordItem = { staffName: string; empNo?: string; position?: string; office: string; tripRef: string; requestId: string; route: string; date: string; time: string; role: "Requester" | "Passenger"; vehicle?: string; vehicleCompany?: string; status: string; tone: string; };
+    const records: RecordItem[] = [];
+
+    scopedRequests.forEach(req => {
+      const staff = staffMembers.find(s => s.name.toLowerCase() === req.person.toLowerCase());
+      const tripRef = req.id.includes("-") ? `TR-${req.id.split("-").pop()}` : (req.tripId ?? req.id);
+      const vehicle = req.vehicleCompany ?? req.vehicle?.split(" · ")[0] ?? "—";
+
+      records.push({ staffName: req.person, empNo: req.requesterEmpNo || staff?.empNo, position: req.requesterPosition || staff?.position || "Staff Member", office: officeForRequest(req), tripRef, requestId: req.id, route: req.route, date: req.date, time: req.time, role: "Requester", vehicle, vehicleCompany: req.vehicleCompany, status: req.status, tone: req.tone });
+
+      (req.passengers || []).forEach(pax => {
+        if (pax.toLowerCase() === req.person.toLowerCase()) return;
+        const paxStaff = staffMembers.find(s => s.name.toLowerCase() === pax.toLowerCase());
+        records.push({ staffName: pax, empNo: paxStaff?.empNo, position: paxStaff?.position || "Staff Member", office: paxStaff?.office || officeForRequest(req), tripRef, requestId: req.id, route: req.route, date: req.date, time: req.time, role: "Passenger", vehicle, vehicleCompany: req.vehicleCompany, status: req.status, tone: req.tone });
+      });
+    });
+    return records;
+  }, [scopedRequests]);
+
+  const filteredAttendance = useMemo(() => {
+    const query = attendanceSearch.trim().toLowerCase();
+    if (!query) return attendanceRegistry;
+    return attendanceRegistry.filter(rec => rec.staffName.toLowerCase().includes(query) || (rec.empNo && rec.empNo.toLowerCase().includes(query)) || rec.route.toLowerCase().includes(query) || rec.office.toLowerCase().includes(query) || rec.tripRef.toLowerCase().includes(query) || rec.requestId.toLowerCase().includes(query));
+  }, [attendanceRegistry, attendanceSearch]);
+
+  const filteredRoutes = useMemo(() => {
+    const query = routeSearch.trim().toLowerCase();
+    if (!query) return routeStats;
+    return routeStats.filter(r => r.route.toLowerCase().includes(query) || r.destination.toLowerCase().includes(query));
+  }, [routeStats, routeSearch]);
+
   const exportReport = () => {
-    const rows = [["Trip","Request","Office","Route","Vehicle company","Vehicle type","Completed","Mileage (km)","Trip cost (LKR)","Highway cost (LKR)","Per diem (LKR)","Other cost (LKR)","Full cost (LKR)","Receipt","Status"],...completedTrips.map(item => [item.id.includes("-") ? `TR-${item.id.split("-").pop()}` : (item.tripId ?? "—"),item.id,officeForRequest(item),item.route,item.vehicleCompany ?? item.vehicle?.split(" · ")[0] ?? "—",item.vehicleType ?? item.vehicle?.split(" · ")[1] ?? "—",item.completedAt ?? "—",String(item.mileageKm ?? 0),String(item.tripCostLkr ?? item.finalPriceLkr ?? 0),String(item.highwayCostLkr ?? 0),String(item.perDiemCostLkr ?? 0),String(item.otherCostLkr ?? 0),String(item.finalPriceLkr ?? 0),item.receiptRef ?? "—",item.status])];
-    downloadCsv(`chrysalis-trip-report-${officeFilter.toLowerCase().replaceAll(" ","-")}.csv`,rows);
+    const rows = [["Trip", "Request", "Office", "Route", "Vehicle company", "Vehicle type", "Completed", "Mileage (km)", "Trip cost (LKR)", "Highway cost (LKR)", "Per diem (LKR)", "Other cost (LKR)", "Full cost (LKR)", "Receipt", "Status"], ...completedTrips.map(item => [item.id.includes("-") ? `TR-${item.id.split("-").pop()}` : (item.tripId ?? "—"), item.id, officeForRequest(item), item.route, item.vehicleCompany ?? item.vehicle?.split(" · ")[0] ?? "—", item.vehicleType ?? item.vehicle?.split(" · ")[1] ?? "—", item.completedAt ?? "—", String(item.mileageKm ?? 0), String(item.tripCostLkr ?? item.finalPriceLkr ?? 0), String(item.highwayCostLkr ?? 0), String(item.perDiemCostLkr ?? 0), String(item.otherCostLkr ?? 0), String(item.finalPriceLkr ?? 0), item.receiptRef ?? "—", item.status])];
+    downloadCsv(`chrysalis-trip-report-${officeFilter.toLowerCase().replaceAll(" ", "-")}.csv`, rows);
     announce("Completed-trip report downloaded.");
   };
-  return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & status" subtitle={canViewAll ? "Colombo administration overview across every office." : `Restricted to ${office} records only.`} action={<button className="primary" onClick={exportReport}>Export completed trips <span>↓</span></button>} />
+
+  const exportRouteReport = () => {
+    const rows = [["Rank", "Route", "Main Destination", "Office", "Total Trips", "Completed Trips", "Passenger Volume", "Total Mileage (km)", "Total Cost (LKR)"], ...routeStats.map((item, idx) => [String(idx + 1), item.route, item.destination, item.sampleOffice, String(item.count), String(item.completedCount), String(item.passengers), String(item.mileage), String(item.cost)])];
+    downloadCsv(`chrysalis-route-analytics-${officeFilter.toLowerCase().replaceAll(" ", "-")}.csv`, rows);
+    announce("Route analytics report downloaded.");
+  };
+
+  const exportAttendanceReport = () => {
+    const rows = [["Staff / Passenger Name", "EMP Number", "Position", "Office", "Request ID", "Trip Ref", "Travel Date", "Time", "Route", "Role", "Vehicle / Company", "Status"], ...attendanceRegistry.map(item => [item.staffName, item.empNo ?? "—", item.position ?? "Staff Member", item.office, item.requestId, item.tripRef, item.date, item.time, item.route, item.role, item.vehicle ?? "—", item.status])];
+    downloadCsv(`chrysalis-passenger-attendance-${officeFilter.toLowerCase().replaceAll(" ", "-")}.csv`, rows);
+    announce("Passenger attendance manifest downloaded.");
+  };
+
+return <><PageTitle eyebrow="MANAGEMENT INFORMATION" title="Reports & analytics" subtitle={canViewAll ? "Colombo administration overview across every office." : `Restricted to ${office} records only.`} action={<div className="report-header-actions"><button className="secondary" onClick={exportAttendanceReport}>Export attendance <span>↓</span></button><button className="primary" onClick={exportReport}>Export completed trips <span>↓</span></button></div>} />
     <section className={`scope-notice ${canViewAll ? "all-scope" : ""}`}><span>{canViewAll ? "◎" : "⌂"}</span><div><strong>{canViewAll ? "All-office access" : "Office-restricted access"}</strong><p>{canViewAll ? "Colombo Head Office Admin can review all branches or narrow the report to one office." : `You can only view requests, status and reports belonging to ${office}.`}</p></div><b>{canViewAll ? "COLOMBO ADMIN" : office.toUpperCase()}</b></section>
-    <div className="report-toolbar"><div className="filter-group"><button className={`filter ${period==="month"?"active":""}`} onClick={()=>setPeriod("month")}>This month</button><button className={`filter ${period==="last"?"active":""}`} onClick={()=>setPeriod("last")}>Last month</button><button className={`filter ${period==="custom"?"active":""}`} onClick={()=>{setPeriod("custom");announce("Custom reporting period enabled for the visible register.")}}>Custom</button></div><div><select aria-label="Report office" value={officeFilter} disabled={!canViewAll} onChange={event => setOfficeFilter(event.target.value)}>{canViewAll && <option>All offices</option>}{offices.map(item=><option key={item}>{item}</option>)}</select><select aria-label="Report status" value={statusFilter} onChange={event=>setStatusFilter(event.target.value)}><option>All statuses</option>{requestStatuses.map(status => <option key={status}>{status}</option>)}</select></div></div>
-    <section className="metric-grid reports"><article className="metric-card"><span>Total requests</span><strong>{scopedRequests.length}</strong><p>Within the permitted office scope</p></article><article className="metric-card"><span>Completed trips</span><strong>{completedTrips.length}</strong><p><b className="up">Closed by Admin</b></p></article><article className="metric-card"><span>Total mileage</span><strong>{totalMileage.toLocaleString()} <small>km</small></strong><p>Actual completed-trip mileage</p></article><article className="metric-card"><span>Full trip cost</span><strong><small>LKR</small> {totalPrice.toLocaleString()}</strong><p>Trip, highway, per diem and other costs combined</p></article></section>
-    <div className="reports-grid"><article className="panel chart-panel"><div className="panel-head"><div><h2>Request status picture</h2><p>{officeFilter} · visible records only</p></div><div className="legend"><span><i className="pink-dot"/>Requests</span><span><i className="navy-dot"/>Progress</span></div></div><div className="chart"><div className="axis"><span>100%</span><span>66%</span><span>33%</span><span>0</span></div>{[["Pending",attention],["Approved",approved],["Scheduled",scheduled],["Completed",completedTrips.length]].map(([label,value],index)=>{const count=Number(value);const requestHeight=count ? Math.max(8,(count/chartMaximum)*100) : 0;const progressHeight=count ? Math.max(6,Math.min(100,((count+index*.35)/chartMaximum)*88)) : 0;return <div className="bar-group" key={String(label)}><div><i style={{height:`${requestHeight}%`}}/><b style={{height:`${progressHeight}%`}}/></div><span>{label}</span></div>})}</div></article><article className="panel efficiency-panel"><div className="panel-head"><div><h2>Workflow progress</h2><p>Approved and scheduled share</p></div></div><div className="donut" style={{background:`conic-gradient(var(--pink) 0 ${completionRate}%,#edf0f3 ${completionRate}% 100%)`}}><div><strong>{completionRate}%</strong><span>progress</span></div></div><div className="efficiency-stats"><p><span>Visible requests</span><strong>{scopedRequests.length}</strong></p><p><span>Needs attention</span><strong>{attention}</strong></p><p><span>Completed</span><strong>{completedTrips.length}</strong></p></div></article></div>
-    <article className="panel report-table"><div className="panel-head"><div><h2>Completed trip financial register</h2><p>Open and print a complete individual report for every returned trip.</p></div><button className="secondary" onClick={exportReport}>Download Excel-ready CSV</button></div><div className="table-scroll"><table><thead><tr><th>Trip</th><th>Request</th><th>Office / route</th><th>Completed</th><th>Mileage</th><th>Full cost</th><th>Receipt</th><th>Individual report</th></tr></thead><tbody>{completedTrips.length ? completedTrips.map(item=><tr key={item.id}><td><strong>{item.id.includes("-") ? `TR-${item.id.split("-").pop()}` : (item.tripId ?? "—")}</strong></td><td>{item.id}<small>{item.person}</small></td><td>{officeForRequest(item)}<small>{item.route}</small></td><td>{item.completedAt ?? "—"}</td><td><strong>{(item.mileageKm ?? 0).toLocaleString()} km</strong></td><td><strong>LKR {(item.finalPriceLkr ?? 0).toLocaleString()}</strong></td><td>{item.receiptRef ?? "—"}</td><td><button className="individual-report-button" onClick={()=>setSelectedReport(item)}>Full PDF report</button></td></tr>) : <tr><td colSpan={8}><div className="report-empty"><strong>No completed trips yet</strong><span>Complete a scheduled trip from Trip Planning to add actual mileage and itemized costs here.</span></div></td></tr>}</tbody></table></div></article>
-    {selectedReport && (() => { const staff = staffMembers.find(member => member.empNo === selectedReport.requesterEmpNo) ?? staffMembers.find(member => member.name === selectedReport.person); const value = (entry?: string | number) => entry === undefined || entry === "" ? "Not recorded" : String(entry); const dateTime = (entry?: string) => { if (!entry) return "Not recorded"; const parsed = new Date(entry); return Number.isNaN(parsed.getTime()) ? entry : parsed.toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true}); }; return <div className="trip-report-backdrop" role="dialog" aria-modal="true" aria-label={`Completed trip report ${selectedReport.id}`}>
-      <div className="trip-report-window"><div className="trip-report-actions"><button className="secondary" onClick={()=>setSelectedReport(null)}>← Back to reports</button><button className="primary" onClick={()=>window.print()}>Print / Save PDF</button></div>
-      <article className="trip-report-sheet"><div className="report-diagonal-watermark" aria-hidden="true">CHRYSALIS</div><header><div className="report-brand"><img src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change"/></div><div><p>COMPLETED TRIP REPORT</p><span>Generated for administration and finance review</span></div><b>COMPLETED</b></header>
-        <section className="report-reference compact"><div><span>Request reference</span><strong>{selectedReport.id}</strong></div><div><span>Trip reference</span><strong>{selectedReport.id.includes("-") ? `TR-${selectedReport.id.split("-").pop()}` : (selectedReport.tripId ?? "Not recorded")}</strong></div><div><span>Base office</span><strong>{officeForRequest(selectedReport)}</strong></div></section>
-        <section className="report-section"><h2>01 · Requester / staff details</h2><dl className="report-details"><div><dt>Full name</dt><dd>{selectedReport.person}</dd></div><div><dt>Employee number</dt><dd>{value(selectedReport.requesterEmpNo ?? staff?.empNo)}</dd></div><div><dt>Position</dt><dd>{value(selectedReport.requesterPosition ?? staff?.position)}</dd></div><div><dt>Project / programme</dt><dd>{value(selectedReport.requesterProject ?? staff?.project)}</dd></div><div className="wide"><dt>Office</dt><dd>{officeForRequest(selectedReport)}</dd></div></dl></section>
-        <section className="report-section"><h2>02 · Request and journey details</h2><dl className="report-details"><div><dt>Request date</dt><dd>{value(selectedReport.requestDate)}</dd></div><div><dt>Request type</dt><dd>{value(selectedReport.requestType)}</dd></div><div className="wide"><dt>Route</dt><dd>{selectedReport.route}</dd></div><div><dt>Travel date / departure</dt><dd>{selectedReport.date} · {selectedReport.time}</dd></div><div><dt>Return</dt><dd>{value(selectedReport.returnDate)} · {value(selectedReport.returnTime)}</dd></div><div><dt>Budget code</dt><dd>{selectedReport.budget}</dd></div><div><dt>Passengers</dt><dd>{selectedReport.passengers?.length ?? 1} traveller(s)</dd></div><div className="wide"><dt>Business purpose</dt><dd>{value(selectedReport.purpose)}</dd></div></dl>{selectedReport.passengers?.length ? <div className="report-passengers"><span>Passenger list</span><p>{selectedReport.passengers.join(" · ")}</p></div> : null}</section>
-        <section className="report-section"><h2>03 · Approval and administration audit</h2><dl className="report-details"><div><dt>Approved by</dt><dd>{value(selectedReport.approvedBy)}</dd></div><div><dt>Approval date / time</dt><dd>{dateTime(selectedReport.approvedAt)}</dd></div><div><dt>Admin who completed trip</dt><dd>{value(selectedReport.completedBy)}</dd></div><div><dt>Vehicle dispatched</dt><dd>{dateTime(selectedReport.dispatchedAt)}</dd></div><div><dt>Vehicle company</dt><dd>{value(selectedReport.vehicleCompany ?? selectedReport.vehicle?.split(" · ")[0])}</dd></div><div><dt>Vehicle type</dt><dd>{value(selectedReport.vehicleType ?? selectedReport.vehicle?.split(" · ")[1])}</dd></div><div className="wide"><dt>Admin notes</dt><dd>{value(selectedReport.adminNotes)}</dd></div></dl></section>
-        {selectedReport.incidents?.length ? <section className="report-section"><h2>04 · Mid-trip incident and vehicle replacement</h2><div className="report-incident-list">{selectedReport.incidents.map(incident=><article key={incident.id}><div className="report-incident-title"><strong>{incident.id}</strong><span>{incident.recordedAt} · {incident.location}</span></div><dl className="report-details"><div className="wide"><dt>Fault / incident</dt><dd>{incident.issue}</dd></div><div><dt>Original vehicle</dt><dd>{incident.originalVehicle}</dd></div><div><dt>Original driver</dt><dd>{incident.originalDriver}</dd></div><div><dt>Replacement vehicle</dt><dd>{incident.replacementVehicle}</dd></div><div><dt>Replacement driver</dt><dd>{incident.replacementDriver}</dd></div><div><dt>Recorded by</dt><dd>{incident.recordedBy}</dd></div><div><dt>Recorded date / time</dt><dd>{incident.recordedAt}</dd></div><div className="wide"><dt>Action taken</dt><dd>{value(incident.actionTaken)}</dd></div></dl></article>)}</div></section> : null}
-        <section className="report-section report-actuals"><h2>{selectedReport.incidents?.length ? "05" : "04"} · Completion and actual cost</h2><div className="report-total"><div><span>Actual mileage</span><strong>{(selectedReport.mileageKm ?? 0).toLocaleString()} km</strong></div><div><span>Full trip cost</span><strong>LKR {(selectedReport.finalPriceLkr ?? 0).toLocaleString()}</strong></div></div><dl className="report-details"><div><dt>Trip completed date</dt><dd>{value(selectedReport.completedAt)}</dd></div><div><dt>Receipt / voucher</dt><dd>{value(selectedReport.receiptRef)}</dd></div><div className="wide"><dt>Completion notes</dt><dd>{value(selectedReport.completionNotes)}</dd></div></dl></section>
-        <footer className="report-watermark"><p className="system-generated-notice">This report is system-generated and does not require signatures.</p></footer>
-      </article></div></div>; })()}
+    <div className="report-subtabs-bar"><div className="admin-tabs report-subtabs"><button className={reportTab === "overview" ? "active" : ""} onClick={() => setReportTab("overview")}>📊 Executive Overview</button><button className={reportTab === "routes" ? "active" : ""} onClick={() => setReportTab("routes")}>🗺️ Route & Destination Analytics</button><button className={reportTab === "travellers" ? "active" : ""} onClick={() => setReportTab("travellers")}>👤 Travellers & Schedule Trends</button><button className={reportTab === "attendance" ? "active" : ""} onClick={() => setReportTab("attendance")}>📋 Passenger Attendance Manifest ({attendanceRegistry.length})</button></div></div>
+    <div className="report-toolbar advanced"><div className="report-filter-section"><span className="filter-label">PERIOD:</span><div className="filter-group"><button className={`filter ${periodMode === "all" ? "active" : ""}`} onClick={() => setPeriodMode("all")}>All time</button><button className={`filter ${periodMode === "monthly" ? "active" : ""}`} onClick={() => setPeriodMode("monthly")}>Monthly</button><button className={`filter ${periodMode === "yearly" ? "active" : ""}`} onClick={() => setPeriodMode("yearly")}>Yearly</button><button className={`filter ${periodMode === "custom" ? "active" : ""}`} onClick={() => { setPeriodMode("custom"); announce("Custom date range filter enabled."); }}>Custom range</button></div>{periodMode === "monthly" && <div className="period-sub-controls"><select aria-label="Select month" value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>{monthNames.map((name, idx) => <option key={name} value={idx}>{name}</option>)}</select><select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>{availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}</select></div>}{periodMode === "yearly" && <div className="period-sub-controls"><select aria-label="Select year" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>{availableYears.map(yr => <option key={yr} value={yr}>{yr}</option>)}</select></div>}{periodMode === "custom" && <div className="period-sub-controls date-inputs"><label><span>From:</span><input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} /></label><label><span>To:</span><input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} /></label></div>}</div><div className="report-secondary-filters"><select aria-label="Report office" value={officeFilter} disabled={!canViewAll} onChange={event => setOfficeFilter(event.target.value)}>{canViewAll && <option>All offices</option>}{offices.map(item => <option key={item}>{item}</option>)}</select><select aria-label="Report status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option>All statuses</option>{requestStatuses.map(status => <option key={status}>{status}</option>)}</select></div></div>
+    <section className="metric-grid reports"><article className="metric-card"><span>Total requests</span><strong>{scopedRequests.length}</strong><p>Within permitted scope</p></article><article className="metric-card"><span>Completed trips</span><strong>{completedTrips.length}</strong><p><b className="up">Closed by Admin</b></p></article><article className="metric-card"><span>Total mileage</span><strong>{totalMileage.toLocaleString()} <small>km</small></strong><p>Actual distance</p></article><article className="metric-card"><span>Full trip cost</span><strong><small>LKR</small> {totalPrice.toLocaleString()}</strong><p>Combined totals</p></article></section>
+
+    {reportTab === "overview" && <>
+      <div className="reports-grid">
+        <article className="panel chart-panel">
+          <div className="panel-head">
+            <div><h2>Request status picture</h2><p>{officeFilter} · {periodMode === "all" ? "All time" : periodMode === "monthly" ? `${monthNames[selectedMonth]} ${selectedYear}` : periodMode === "yearly" ? `Year ${selectedYear}` : "Filtered range"}</p></div>
+            <div className="legend"><span><i className="pink-dot" />Requests</span><span><i className="navy-dot" />Progress</span></div>
+          </div>
+          <div className="chart">
+            <div className="axis"><span>100%</span><span>66%</span><span>33%</span><span>0</span></div>
+            {[["Pending", attention], ["Approved", approved], ["Scheduled", scheduled], ["Completed", completedTrips.length]].map(([label, value], index) => {
+              const count = Number(value);
+              const requestHeight = count ? Math.max(8, (count / chartMaximum) * 100) : 0;
+              const progressHeight = count ? Math.max(6, Math.min(100, ((count + index * .35) / chartMaximum) * 88)) : 0;
+              return <div className="bar-group" key={String(label)}><div><i style={{ height: `${requestHeight}%` }} /><b style={{ height: `${progressHeight}%` }} /></div><span>{label}</span></div>;
+            })}
+          </div>
+        </article>
+        <article className="panel efficiency-panel">
+          <div className="panel-head"><div><h2>Workflow progress</h2><p>Approved and scheduled share</p></div></div>
+          <div className="donut" style={{ background: `conic-gradient(var(--pink) 0 ${completionRate}%,#edf0f3 ${completionRate}% 100%)` }}><div><strong>{completionRate}%</strong><span>progress</span></div></div>
+          <div className="efficiency-stats"><p><span>Visible requests</span><strong>{scopedRequests.length}</strong></p><p><span>Needs attention</span><strong>{attention}</strong></p><p><span>Completed</span><strong>{completedTrips.length}</strong></p></div>
+        </article>
+      </div>
+
+      <article className="panel report-table">
+        <div className="panel-head">
+          <div><h2>Completed trip financial register</h2><p>Open and print a complete individual report for every returned trip.</p></div>
+          <button className="secondary" onClick={exportReport}>Download Excel-ready CSV</button>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th>Trip</th><th>Request</th><th>Office / route</th><th>Completed</th><th>Mileage</th><th>Full cost</th><th>Receipt</th><th>Individual report</th></tr></thead>
+            <tbody>
+              {completedTrips.length ? completedTrips.map(item => <tr key={item.id}>
+                <td><strong>{item.id.includes("-") ? `TR-${item.id.split("-").pop()}` : (item.tripId ?? "—")}</strong></td>
+                <td>{item.id}<small>{item.person}</small></td>
+                <td>{officeForRequest(item)}<small>{item.route}</small></td>
+                <td>{item.completedAt ?? "—"}</td>
+                <td><strong>{(item.mileageKm ?? 0).toLocaleString()} km</strong></td>
+                <td><strong>LKR {(item.finalPriceLkr ?? 0).toLocaleString()}</strong></td>
+                <td>{item.receiptRef ?? "—"}</td>
+                <td><button className="individual-report-button" onClick={() => setSelectedReport(item)}>Full PDF report</button></td>
+              </tr>) : <tr><td colSpan={8}><div className="report-empty"><strong>No completed trips in this period</strong><span>Complete a scheduled trip from Trip Planning to add actual mileage and itemized costs here.</span></div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </>}
+
+    {reportTab === "routes" && <>
+      <div className="analytics-summary-banner">
+        <div>
+          <h3>Top Corridors & Travel Destinations</h3>
+          <p>Discover which transport routes have the highest traffic, passenger volumes, and operational costs.</p>
+        </div>
+        <button className="secondary" onClick={exportRouteReport}>Export Route Analytics (CSV)</button>
+      </div>
+
+      <div className="reports-analytics-grid">
+        <article className="panel destination-hubs-panel">
+          <div className="panel-head"><div><h2>Primary Destination Hubs</h2><p>Most visited cities and field regions</p></div><span className="hub-count">{topDestinations.length} destinations</span></div>
+          <div className="destination-chips">
+            {topDestinations.map((dest, i) => (
+              <div key={dest.city} className={`destination-chip ${i === 0 ? "top-hub" : ""}`}>
+                <div className="hub-rank">#{i + 1}</div>
+                <div className="hub-info">
+                  <strong>{dest.city}</strong>
+                  <span>{dest.count} trip{dest.count === 1 ? "" : "s"} · {dest.passengers} passenger{dest.passengers === 1 ? "" : "s"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel routes-ranking-panel">
+          <div className="panel-head">
+            <div><h2>Most Frequent Routes (Traffic Volume)</h2><p>Ranked by number of journeys</p></div>
+            <div className="route-search-wrap">
+              <input type="text" placeholder="Filter routes..." value={routeSearch} onChange={e => setRouteSearch(e.target.value)} />
+            </div>
+          </div>
+          <div className="route-ranks-list">
+            {filteredRoutes.length ? filteredRoutes.map((routeItem, idx) => {
+              const pct = Math.round((routeItem.count / maxRouteCount) * 100);
+              return (
+                <div className="route-rank-card" key={routeItem.route}>
+                  <div className="route-rank-badge">#{idx + 1}</div>
+                  <div className="route-rank-main">
+                    <div className="route-rank-header">
+                      <strong>{routeItem.route}</strong>
+                      <span className="route-trip-count">{routeItem.count} journey{routeItem.count === 1 ? "" : "s"} ({routeItem.completedCount} completed)</span>
+                    </div>
+                    <div className="route-progress-bar">
+                      <div className="route-progress-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="route-rank-footer">
+                      <span>👥 <b>{routeItem.passengers}</b> total passengers</span>
+                      <span>📍 Destination: <b>{routeItem.destination}</b></span>
+                      {routeItem.mileage > 0 && <span>🚗 <b>{routeItem.mileage.toLocaleString()}</b> km</span>}
+                      {routeItem.cost > 0 && <span>💰 <b>LKR {routeItem.cost.toLocaleString()}</b></span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            }) : <div className="report-empty"><strong>No matching routes found</strong><span>Try a different search or date filter.</span></div>}
+          </div>
+        </article>
+      </div>
+    </>}
+
+    {reportTab === "travellers" && <>
+      <div className="analytics-summary-banner">
+        <div>
+          <h3>Traveller Patterns & Schedule Insights</h3>
+          <p>Analyze who travels the most frequently and determine peak departure days across operations.</p>
+        </div>
+        <div className="peak-day-badge">
+          <span>📅 PEAK TRAVEL DAY</span>
+          <strong>{weekdayStats.peakDay?.name ?? "Monday"}</strong>
+          <small>{weekdayStats.peakDay?.count ?? 0} journeys recorded</small>
+        </div>
+      </div>
+
+      <div className="reports-analytics-grid">
+        <article className="panel weekday-chart-panel">
+          <div className="panel-head">
+            <div><h2>Busiest Days of the Week</h2><p>Distribution of journeys across workdays and weekends</p></div>
+            <span className="weekday-total">{weekdayStats.totalDaysTrips} total dated journeys</span>
+          </div>
+          <div className="weekday-bars">
+            {weekdayStats.days.map(day => {
+              const heightPct = weekdayStats.maxDayCount ? Math.max(10, (day.count / weekdayStats.maxDayCount) * 100) : 0;
+              const isPeak = day.name === weekdayStats.peakDay?.name && day.count > 0;
+              return (
+                <div className={`weekday-col ${isPeak ? "peak-day" : ""}`} key={day.name}>
+                  <div className="weekday-bar-container">
+                    <span className="weekday-val">{day.count}</span>
+                    <div className="weekday-bar-fill" style={{ height: `${heightPct}%` }} />
+                  </div>
+                  <strong className="weekday-name">{day.short}</strong>
+                  <small className="weekday-pct">{weekdayStats.totalDaysTrips ? Math.round((day.count / weekdayStats.totalDaysTrips) * 100) : 0}%</small>
+                </div>
+              );
+            })}
+          </div>
+        </article>
+
+        <article className="panel travellers-leaderboard-panel">
+          <div className="panel-head">
+            <div><h2>Top Staff Travellers</h2><p>Staff members with highest journey and attendance volume</p></div>
+            <span className="traveller-count">{travellerStats.length} active travellers</span>
+          </div>
+          <div className="traveller-leaderboard-list">
+            {travellerStats.length ? travellerStats.slice(0, 10).map((t, index) => (
+              <div className="traveller-card" key={t.name}>
+                <div className={`traveller-rank ${index < 3 ? `top-${index + 1}` : ""}`}>
+                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
+                </div>
+                <div className="traveller-avatar">{t.name.split(" ").map(w => w[0]).slice(0, 2).join("")}</div>
+                <div className="traveller-details">
+                  <strong>{t.name}</strong>
+                  <small>{t.empNo ? `EMP-${t.empNo} · ` : ""}{t.position ?? "Staff Member"} · {t.office}</small>
+                </div>
+                <div className="traveller-stats-pills">
+                  <div className="stat-pill"><b>{t.totalJourneys}</b><span>trips</span></div>
+                  <div className="stat-pill"><b>{t.requestedCount}</b><span>requested</span></div>
+                  {t.mileage > 0 && <div className="stat-pill"><b>{t.mileage.toLocaleString()}</b><span>km</span></div>}
+                </div>
+              </div>
+            )) : <div className="report-empty"><strong>No travel data recorded for this period</strong></div>}
+          </div>
+        </article>
+      </div>
+    </>}
+
+    {reportTab === "attendance" && <>
+      <div className="analytics-summary-banner">
+        <div>
+          <h3>Passenger Attendance & Journey Manifest</h3>
+          <p>Full staff attendance registry for completed and scheduled movements across all vehicles.</p>
+        </div>
+        <div className="attendance-actions">
+          <button className="primary" onClick={exportAttendanceReport}>Download Manifest (CSV) <span>↓</span></button>
+        </div>
+      </div>
+
+      <article className="panel attendance-panel">
+        <div className="panel-head">
+          <div>
+            <h2>Passenger Attendance Registry</h2>
+            <p>Showing {filteredAttendance.length} attendance record{filteredAttendance.length === 1 ? "" : "s"}</p>
+          </div>
+          <div className="attendance-search-wrap">
+            <input
+              type="text"
+              placeholder="Search by staff name, EMP No, route or office..."
+              value={attendanceSearch}
+              onChange={e => setAttendanceSearch(e.target.value)}
+            />
+            {attendanceSearch && <button className="clear-search" onClick={() => setAttendanceSearch("")}>×</button>}
+          </div>
+        </div>
+
+        <div className="table-scroll">
+          <table className="attendance-table">
+            <thead>
+              <tr>
+                <th>Passenger / Staff</th>
+                <th>Role in Trip</th>
+                <th>Trip & Request</th>
+                <th>Travel Date</th>
+                <th>Journey Route</th>
+                <th>Office</th>
+                <th>Vehicle / Provider</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAttendance.length ? filteredAttendance.map((rec, idx) => (
+                <tr key={`${rec.requestId}-${rec.staffName}-${idx}`}>
+                  <td>
+                    <strong>{rec.staffName}</strong>
+                    <small>{rec.empNo ? `EMP-${rec.empNo} · ` : ""}{rec.position}</small>
+                  </td>
+                  <td>
+                    <span className={`role-chip ${rec.role.toLowerCase()}`}>
+                      {rec.role === "Requester" ? "★ Lead / Requester" : "👥 Passenger"}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>{rec.tripRef}</strong>
+                    <small>{rec.requestId}</small>
+                  </td>
+                  <td>
+                    <strong>{rec.date}</strong>
+                    <small>{rec.time}</small>
+                  </td>
+                  <td>{rec.route}</td>
+                  <td><span className="office-tag">{rec.office}</span></td>
+                  <td>{rec.vehicleCompany ?? rec.vehicle ?? "—"}</td>
+                  <td><Status tone={rec.tone}>{rec.status}</Status></td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={8}>
+                    <div className="report-empty">
+                      <strong>No passenger records match your query</strong>
+                      <span>Try clearing your search or expanding the reporting period.</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </>}
+
+    {selectedReport && (() => {
+      const staff = staffMembers.find(member => member.empNo === selectedReport.requesterEmpNo) ?? staffMembers.find(member => member.name === selectedReport.person);
+      const value = (entry?: string | number) => entry === undefined || entry === "" ? "Not recorded" : String(entry);
+      const dateTime = (entry?: string) => {
+        if (!entry) return "Not recorded";
+        const parsed = new Date(entry);
+        return Number.isNaN(parsed.getTime()) ? entry : parsed.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+      };
+      return <div className="trip-report-backdrop" role="dialog" aria-modal="true" aria-label={`Completed trip report ${selectedReport.id}`}>
+        <div className="trip-report-window"><div className="trip-report-actions"><button className="secondary" onClick={() => setSelectedReport(null)}>← Back to reports</button><button className="primary" onClick={() => window.print()}>Print / Save PDF</button></div>
+          <article className="trip-report-sheet"><div className="report-diagonal-watermark" aria-hidden="true">CHRYSALIS</div><header><div className="report-brand"><img src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change" /></div><div><p>COMPLETED TRIP REPORT</p><span>Generated for administration and finance review</span></div><b>COMPLETED</b></header>
+            <section className="report-reference compact"><div><span>Request reference</span><strong>{selectedReport.id}</strong></div><div><span>Trip reference</span><strong>{selectedReport.id.includes("-") ? `TR-${selectedReport.id.split("-").pop()}` : (selectedReport.tripId ?? "Not recorded")}</strong></div><div><span>Base office</span><strong>{officeForRequest(selectedReport)}</strong></div></section>
+            <section className="report-section"><h2>01 · Requester / staff details</h2><dl className="report-details"><div><dt>Full name</dt><dd>{selectedReport.person}</dd></div><div><dt>Employee number</dt><dd>{value(selectedReport.requesterEmpNo ?? staff?.empNo)}</dd></div><div><dt>Position</dt><dd>{value(selectedReport.requesterPosition ?? staff?.position)}</dd></div><div><dt>Project / programme</dt><dd>{value(selectedReport.requesterProject ?? staff?.project)}</dd></div><div className="wide"><dt>Office</dt><dd>{officeForRequest(selectedReport)}</dd></div></dl></section>
+            <section className="report-section"><h2>02 · Request and journey details</h2><dl className="report-details"><div><dt>Request date</dt><dd>{value(selectedReport.requestDate)}</dd></div><div><dt>Request type</dt><dd>{value(selectedReport.requestType)}</dd></div><div className="wide"><dt>Route</dt><dd>{selectedReport.route}</dd></div><div><dt>Travel date / departure</dt><dd>{selectedReport.date} · {selectedReport.time}</dd></div><div><dt>Return</dt><dd>{value(selectedReport.returnDate)} · {value(selectedReport.returnTime)}</dd></div><div><dt>Budget code</dt><dd>{selectedReport.budget}</dd></div><div><dt>Passengers</dt><dd>{selectedReport.passengers?.length ?? 1} traveller(s)</dd></div><div className="wide"><dt>Business purpose</dt><dd>{value(selectedReport.purpose)}</dd></div></dl>{selectedReport.passengers?.length ? <div className="report-passengers"><span>Passenger list</span><p>{selectedReport.passengers.join(" · ")}</p></div> : null}</section>
+            <section className="report-section"><h2>03 · Approval and administration audit</h2><dl className="report-details"><div><dt>Approved by</dt><dd>{value(selectedReport.approvedBy)}</dd></div><div><dt>Approval date / time</dt><dd>{dateTime(selectedReport.approvedAt)}</dd></div><div><dt>Admin who completed trip</dt><dd>{value(selectedReport.completedBy)}</dd></div><div><dt>Vehicle dispatched</dt><dd>{dateTime(selectedReport.dispatchedAt)}</dd></div><div><dt>Vehicle company</dt><dd>{value(selectedReport.vehicleCompany ?? selectedReport.vehicle?.split(" · ")[0])}</dd></div><div><dt>Vehicle type</dt><dd>{value(selectedReport.vehicleType ?? selectedReport.vehicle?.split(" · ")[1])}</dd></div><div className="wide"><dt>Admin notes</dt><dd>{value(selectedReport.adminNotes)}</dd></div></dl></section>
+            {selectedReport.incidents?.length ? <section className="report-section"><h2>04 · Mid-trip incident and vehicle replacement</h2><div className="report-incident-list">{selectedReport.incidents.map(incident => <article key={incident.id}><div className="report-incident-title"><strong>{incident.id}</strong><span>{incident.recordedAt} · {incident.location}</span></div><dl className="report-details"><div className="wide"><dt>Fault / incident</dt><dd>{incident.issue}</dd></div><div><dt>Original vehicle</dt><dd>{incident.originalVehicle}</dd></div><div><dt>Original driver</dt><dd>{incident.originalDriver}</dd></div><div><dt>Replacement vehicle</dt><dd>{incident.replacementVehicle}</dd></div><div><dt>Replacement driver</dt><dd>{incident.replacementDriver}</dd></div><div><dt>Recorded by</dt><dd>{incident.recordedBy}</dd></div><div><dt>Recorded date / time</dt><dd>{incident.recordedAt}</dd></div><div className="wide"><dt>Action taken</dt><dd>{value(incident.actionTaken)}</dd></div></dl></article>)}</div></section> : null}
+            <section className="report-section report-actuals"><h2>{selectedReport.incidents?.length ? "05" : "04"} · Completion and actual cost</h2><div className="report-total"><div><span>Actual mileage</span><strong>{(selectedReport.mileageKm ?? 0).toLocaleString()} km</strong></div><div><span>Full trip cost</span><strong>LKR {(selectedReport.finalPriceLkr ?? 0).toLocaleString()}</strong></div></div><dl className="report-details"><div><dt>Trip completed date</dt><dd>{value(selectedReport.completedAt)}</dd></div><div><dt>Receipt / voucher</dt><dd>{value(selectedReport.receiptRef)}</dd></div><div className="wide"><dt>Completion notes</dt><dd>{value(selectedReport.completionNotes)}</dd></div></dl></section>
+            <footer className="report-watermark"><p className="system-generated-notice">This report is system-generated and does not require signatures.</p></footer>
+          </article></div></div>;
+    })()}
   </>;
 }
 
