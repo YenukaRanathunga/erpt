@@ -767,70 +767,105 @@ body.theme-dark,
 
 /* Calendar Cards in Dark Mode */
 .theme-dark .calendar-event {
-  background: #132034 !important;
-  border-color: #223856 !important;
-  border-left-color: #38bdf8 !important;
+  background: #1a2942 !important;
+  border-color: #2d4a6f !important;
+  border-left-color: #60a5fa !important;
   color: #e2e8f0 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
 }
 .theme-dark .calendar-event:hover {
-  border-color: #38bdf8 !important;
-  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 8px 28px rgba(96, 165, 250, 0.3) !important;
 }
 .theme-dark .calendar-event.green {
-  background: #0d2818 !important;
-  border-color: #1d4f32 !important;
-  border-left-color: #22c55e !important;
+  background: #0f3623 !important;
+  border-color: #1a6b3c !important;
+  border-left-color: #34d399 !important;
 }
 .theme-dark .calendar-event.blue {
-  background: #112338 !important;
-  border-color: #1d3c5f !important;
-  border-left-color: #38bdf8 !important;
+  background: #132d4a !important;
+  border-color: #1e4d7a !important;
+  border-left-color: #60a5fa !important;
 }
 .theme-dark .calendar-event.amber {
-  background: #2d1f08 !important;
-  border-color: #503710 !important;
-  border-left-color: #f59e0b !important;
+  background: #3d2a0a !important;
+  border-color: #6b4c14 !important;
+  border-left-color: #fbbf24 !important;
 }
 .theme-dark .calendar-event.red {
-  background: #301014 !important;
-  border-color: #5c1d25 !important;
-  border-left-color: #ef4444 !important;
+  background: #3d1318 !important;
+  border-color: #7a242e !important;
+  border-left-color: #f87171 !important;
 }
 .theme-dark .calendar-event.mine {
-  border-left-color: #f43f5e !important;
+  border-left-color: #fb7185 !important;
+}
+.theme-dark .cal-card-head {
+  color: #f1f5f9 !important;
 }
 .theme-dark .cal-card-times {
   color: #f8fafc !important;
 }
+.theme-dark .cal-card-times .cal-arrow {
+  color: #64748b !important;
+}
+.theme-dark .cal-card-icon {
+  color: #94a3b8 !important;
+}
 .theme-dark .cal-card-route {
   color: #ffffff !important;
 }
+.theme-dark .cal-badge {
+  border-width: 1px !important;
+}
+.theme-dark .cal-badge.green {
+  background: rgba(52, 211, 153, 0.18) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+.theme-dark .cal-badge.blue {
+  background: rgba(96, 165, 250, 0.18) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+.theme-dark .cal-badge.amber {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: #fcd34d !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+.theme-dark .cal-badge.red {
+  background: rgba(248, 113, 113, 0.18) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
 .theme-dark .cal-pill {
-  background: rgba(56, 189, 248, 0.14) !important;
-  border-color: rgba(56, 189, 248, 0.28) !important;
-  color: #7dd3fc !important;
+  background: rgba(96, 165, 250, 0.14) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  color: #93c5fd !important;
 }
 .theme-dark .cal-pill b {
   color: #e0f2fe !important;
 }
 .theme-dark .cal-card-return {
-  background: rgba(234, 88, 12, 0.18) !important;
-  border-color: rgba(234, 88, 12, 0.35) !important;
+  background: rgba(251, 146, 60, 0.15) !important;
+  border-color: rgba(251, 146, 60, 0.35) !important;
   color: #fdba74 !important;
+}
+.theme-dark .cal-return-icon {
+  color: #fb923c !important;
 }
 .theme-dark .cal-return-text strong {
   color: #ffedd5 !important;
 }
 .theme-dark .cal-card-footer {
-  border-top-color: rgba(255, 255, 255, 0.14) !important;
+  border-top-color: rgba(255, 255, 255, 0.12) !important;
   color: #94a3b8 !important;
 }
 .theme-dark .cal-owner {
   color: #cbd5e1 !important;
 }
 .theme-dark .cal-vehicle {
-  color: #38bdf8 !important;
+  color: #60a5fa !important;
 }
 .theme-dark .cal-office {
   color: #94a3b8 !important;
@@ -851,29 +886,29 @@ body.theme-dark,
 }
 .theme-dark .schedule-view button.schedule-card-detailed,
 .theme-dark .schedule-card-detailed {
-  background: #132034 !important;
-  border-color: #223856 !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  background: #1a2942 !important;
+  border-color: #2d4a6f !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
 }
 .theme-dark .schedule-card-detailed:hover {
-  border-color: #38bdf8 !important;
-  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.2) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 8px 24px rgba(96, 165, 250, 0.25) !important;
 }
 .theme-dark .schedule-card-detailed.green {
-  border-left-color: #22c55e !important;
-  background: #0d2818 !important;
+  border-left-color: #34d399 !important;
+  background: #0f3623 !important;
 }
 .theme-dark .schedule-card-detailed.blue {
-  border-left-color: #38bdf8 !important;
-  background: #112338 !important;
+  border-left-color: #60a5fa !important;
+  background: #132d4a !important;
 }
 .theme-dark .schedule-card-detailed.amber {
-  border-left-color: #f59e0b !important;
-  background: #2d1f08 !important;
+  border-left-color: #fbbf24 !important;
+  background: #3d2a0a !important;
 }
 .theme-dark .schedule-card-detailed.red {
-  border-left-color: #ef4444 !important;
-  background: #301014 !important;
+  border-left-color: #f87171 !important;
+  background: #3d1318 !important;
 }
 .theme-dark .sched-times {
   border-right-color: #223856 !important;
@@ -889,7 +924,7 @@ body.theme-dark,
   color: #f1f5f9 !important;
 }
 .theme-dark .sched-vehicle {
-  color: #38bdf8 !important;
+  color: #60a5fa !important;
 }
 
 /* Modal Dialogs in Dark Mode */
