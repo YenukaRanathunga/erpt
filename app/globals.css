@@ -336,7 +336,11 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 .theme-toggle-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: auto;
+  min-width: max-content;
+  flex: 0 0 auto;
   height: 34px;
   padding: 0 11px;
   border: 1px solid var(--line);

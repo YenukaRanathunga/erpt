@@ -37,6 +37,9 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "App.tsx",
+    "main.tsx",
+    "vite.config.ts"
   ]
 }
