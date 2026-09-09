@@ -939,7 +939,7 @@ function Reports({ requests, office, offices, canViewAll }: { requests: RequestI
       const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
       if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
       const dmy = clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/);
-      if (dmy) return new Date(Number(dmy[3] ?? 2026), Number(dmy[2] - 1), Number(dmy[1]));
+      if (dmy) return new Date(Number(dmy[3] ?? 2026), Number(dmy[2]) - 1, Number(dmy[1]));
       const monthDay = clean.match(/^(\d{1,2})\s+([A-Za-z]+)(?:\s+(\d{4}))?$/);
       if (monthDay) {
         const shortMonths = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
