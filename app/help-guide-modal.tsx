@@ -2,37 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
-export type SupportTicket = {
-  id: string;
-  category: string;
-  priority: "normal" | "urgent" | "emergency";
-  relatedRequestId?: string;
-  subject: string;
-  message: string;
-  contactPhone?: string;
-  requesterName: string;
-  requesterOffice: string;
-  createdAt: string;
-  status: "Under Review" | "Assigned to Fleet Admin" | "Resolved";
-};
-
-const defaultSupportTickets: SupportTicket[] = [
-  {
-    id: "TKT-260814-001",
-    category: "Booking Amendment / Reschedule",
-    priority: "normal",
-    relatedRequestId: "VR-260814-039",
-    subject: "Departure time adjustment for Badulla trip",
-    message: "Requesting to adjust departure time from 06:30 to 07:15 AM to coordinate with project field officers arriving from Bandarawela.",
-    contactPhone: "+94 77 123 4567",
-    requesterName: "Dilum Sanjeewa",
-    requesterOffice: "Batticaloa Area Office",
-    createdAt: "14 Aug 2026, 09:15 AM",
-    status: "Assigned to Fleet Admin"
-  }
-];
-
-type HelpTab = "guide" | "workflow" | "safety" | "ticket" | "contacts";
+type HelpTab = "guide" | "workflow" | "safety";
 
 interface HelpGuideModalProps {
   isOpen: boolean;
@@ -51,34 +21,9 @@ export default function HelpGuideModal({
   currentUser,
   currentRole,
   currentOffice,
-  onAnnounce,
+  onAnnounce: _onAnnounce,
 }: HelpGuideModalProps) {
   const [activeTab, setActiveTab] = useState<HelpTab>("guide");
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-
-  // Support ticket form state
-  const [ticketCategory, setTicketCategory] = useState("Urgent Transport Assistance");
-  const [ticketPriority, setTicketPriority] = useState<"normal" | "urgent" | "emergency">("normal");
-  const [relatedReqId, setRelatedReqId] = useState("");
-  const [ticketSubject, setTicketSubject] = useState("");
-  const [ticketPhone, setTicketPhone] = useState("");
-  const [ticketMessage, setTicketMessage] = useState("");
-  const [ticketSubmitted, setTicketSubmitted] = useState(false);
-  const [lastSubmittedId, setLastSubmittedId] = useState("");
-
-  // Load saved tickets from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("chrysalis_helpdesk_tickets");
-      if (saved) {
-        setTickets(JSON.parse(saved) as SupportTicket[]);
-      } else {
-        setTickets(defaultSupportTickets);
-      }
-    } catch {
-      setTickets(defaultSupportTickets);
-    }
-  }, []);
 
   // Close on Escape key
   useEffect(() => {
@@ -93,71 +38,22 @@ export default function HelpGuideModal({
 
   if (!isOpen) return null;
 
-  const handleTicketSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ticketSubject.trim() || !ticketMessage.trim()) {
-      onAnnounce("Please enter both a subject and a message description.");
-      return;
-    }
-
-    const now = new Date();
-    const dateCode = String(now.getDate()).padStart(2, "0") + String(now.getMonth() + 1).padStart(2, "0") + String(now.getFullYear()).slice(-2);
-    const randomSuffix = String(Math.floor(100 + Math.random() * 900));
-    const newId = "TKT-" + dateCode + "-" + randomSuffix;
-
-    const newTicket: SupportTicket = {
-      id: newId,
-      category: ticketCategory,
-      priority: ticketPriority,
-      relatedRequestId: relatedReqId.trim() || undefined,
-      subject: ticketSubject.trim(),
-      message: ticketMessage.trim(),
-      contactPhone: ticketPhone.trim() || undefined,
-      requesterName: currentUser,
-      requesterOffice: currentOffice,
-      createdAt: now.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      status: "Under Review"
-    };
-
-    const updated = [newTicket, ...tickets];
-    setTickets(updated);
-    try {
-      localStorage.setItem("chrysalis_helpdesk_tickets", JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
-    setLastSubmittedId(newId);
-    setTicketSubmitted(true);
-    setTicketSubject("");
-    setTicketMessage("");
-    setRelatedReqId("");
-    setTicketPhone("");
-    onAnnounce("Helpdesk ticket " + newId + " submitted to the Operations Desk.");
-  };
-
   return (
     <div className="help-modal-backdrop" onClick={onClose} role="presentation">
       <section
         className="help-modal-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Operations Guide and Support Desk"
+        aria-label="Operations Guide"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <header className="help-modal-header">
           <div className="help-modal-title-wrap">
-            <span className="help-eyebrow">CHRYALIS MOBILITY OPERATIONS MANUAL &amp; HELPDESK</span>
-            <h2>Operations Guide &amp; Support Desk</h2>
+            <span className="help-eyebrow">CHRYALIS MOBILITY OPERATIONS MANUAL</span>
+            <h2>Operations Guide</h2>
             <p>
-              Requisition guidelines, approval routing rules, safety policies, and direct assistance ticketing.
+              Requisition guidelines, approval routing rules, and fleet safety policies.
             </p>
           </div>
           <button
@@ -192,21 +88,6 @@ export default function HelpGuideModal({
             onClick={() => setActiveTab("safety")}
           >
             Fleet Rules &amp; Protocol
-          </button>
-          <button
-            type="button"
-            className={activeTab === "ticket" ? "active" : ""}
-            onClick={() => setActiveTab("ticket")}
-          >
-            Submit Support Ticket
-            {tickets.length > 0 && <span className="tab-count">{tickets.length}</span>}
-          </button>
-          <button
-            type="button"
-            className={activeTab === "contacts" ? "active" : ""}
-            onClick={() => setActiveTab("contacts")}
-          >
-            Helplines &amp; Desks
           </button>
         </nav>
 
@@ -478,267 +359,6 @@ export default function HelpGuideModal({
                     When pool vehicles are fully committed, Area Admin contracts approved commercial rental vehicles. Hired drivers must adhere to Chrysalis zero-tolerance substance policies and speed limits.
                   </p>
                   <small>Seat belts are mandatory for all passengers at all times.</small>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: SUBMIT SUPPORT TICKET */}
-          {activeTab === "ticket" && (
-            <div className="help-tab-pane">
-              <div className="help-section-header">
-                <h3>Submit an Operations Helpdesk Ticket</h3>
-                <p>
-                  Submit a direct support request to the Transport &amp; Fleet Administration Desk for urgent trip amendments, breakdown recovery, budget code adjustments, or general system inquiries.
-                </p>
-              </div>
-
-              {ticketSubmitted && (
-                <div className="ticket-success-alert">
-                  <span className="success-icon">✓</span>
-                  <div>
-                    <strong>Helpdesk Ticket Registered: {lastSubmittedId}</strong>
-                    <p>Your request has been routed to the Operations Duty Desk. Response within 30 minutes for urgent matters.</p>
-                  </div>
-                  <button type="button" onClick={() => setTicketSubmitted(false)}>Submit another</button>
-                </div>
-              )}
-
-              <form className="help-ticket-form" onSubmit={handleTicketSubmit}>
-                <div className="ticket-form-grid">
-                  <label>
-                    <span>Request Category *</span>
-                    <select
-                      value={ticketCategory}
-                      onChange={(e) => setTicketCategory(e.target.value)}
-                    >
-                      <option>Urgent Transport Assistance</option>
-                      <option>Booking Amendment / Reschedule</option>
-                      <option>Cancel Existing Booking</option>
-                      <option>Driver / Vehicle Issue</option>
-                      <option>Budget Code / Approver Issue</option>
-                      <option>General Helpdesk Inquiry</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Priority Level *</span>
-                    <select
-                      value={ticketPriority}
-                      onChange={(e) => setTicketPriority(e.target.value as "normal" | "urgent" | "emergency")}
-                    >
-                      <option value="normal">Normal (Routine response within 4 hours)</option>
-                      <option value="urgent">Urgent (Trip within 24 hours)</option>
-                      <option value="emergency">Critical Emergency (Immediate response)</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span>Related Vehicle Requisition ID (Optional)</span>
-                    <input
-                      placeholder="e.g. VR-260814-039"
-                      value={relatedReqId}
-                      onChange={(e) => setRelatedReqId(e.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span>Contact Phone / Extension</span>
-                    <input
-                      placeholder="e.g. +94 77 123 4567 or Ext 402"
-                      value={ticketPhone}
-                      onChange={(e) => setTicketPhone(e.target.value)}
-                    />
-                  </label>
-
-                  <label className="full-width">
-                    <span>Subject / Short Summary *</span>
-                    <input
-                      placeholder="e.g. Urgent departure reschedule for Badulla field mission"
-                      value={ticketSubject}
-                      onChange={(e) => setTicketSubject(e.target.value)}
-                      required
-                    />
-                  </label>
-
-                  <label className="full-width">
-                    <span>Detailed Request / Description *</span>
-                    <textarea
-                      rows={4}
-                      placeholder="Provide all necessary details (changes in passenger count, route adjustment, reason for cancellation, or issue encountered)..."
-                      value={ticketMessage}
-                      onChange={(e) => setTicketMessage(e.target.value)}
-                      required
-                    />
-                  </label>
-                </div>
-
-                <div className="ticket-form-footer">
-                  <span className="requester-indicator">
-                    Submitting as: <strong>{currentUser}</strong> ({currentOffice})
-                  </span>
-                  <button type="submit" className="help-submit-btn">
-                    Submit Helpdesk Ticket →
-                  </button>
-                </div>
-              </form>
-
-              {/* Submitted Tickets History */}
-              <div className="submitted-tickets-section">
-                <h4>Your Active Helpdesk Requests ({tickets.length})</h4>
-                {tickets.length ? (
-                  <div className="ticket-cards-list">
-                    {tickets.map((t) => (
-                      <div key={t.id} className="ticket-item-card">
-                        <div className="ticket-item-head">
-                          <span className="ticket-id-tag">{t.id}</span>
-                          <span className={"ticket-priority-pill " + t.priority}>
-                            {t.priority.toUpperCase()}
-                          </span>
-                          <span className="ticket-status-pill">{t.status}</span>
-                          <span className="ticket-date">{t.createdAt}</span>
-                        </div>
-                        <h5>{t.subject}</h5>
-                        <p>{t.message}</p>
-                        <div className="ticket-meta-footer">
-                          <span>Category: <strong>{t.category}</strong></span>
-                          {t.relatedRequestId && (
-                            <span>Requisition: <strong>{t.relatedRequestId}</strong></span>
-                          )}
-                          {t.contactPhone && (
-                            <span>Phone: <strong>{t.contactPhone}</strong></span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-tickets-msg">No support tickets submitted yet.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: OPERATIONS CONTACTS & HELPLINES */}
-          {activeTab === "contacts" && (
-            <div className="help-tab-pane">
-              <div className="help-section-header">
-                <h3>Transport Helplines &amp; Area Office Contacts</h3>
-                <p>
-                  Official communication lines for fleet operations, roadside breakdowns, and area transport coordinators.
-                </p>
-              </div>
-
-              <div className="help-contacts-grid">
-                {/* Central Helpdesk */}
-                <div className="contact-box main-desk">
-                  <span className="desk-tag">CENTRAL DESK</span>
-                  <h4>Colombo Head Office Operations</h4>
-                  <p>Responsible for overall mobility coordination, approvals, and fleet policy.</p>
-                  <dl>
-                    <div>
-                      <dt>General Office Tel:</dt>
-                      <dd>+94 11 258 4500 (Ext 402 / 405)</dd>
-                    </div>
-                    <div>
-                      <dt>Transport Desk Mobile:</dt>
-                      <dd>+94 77 234 5678</dd>
-                    </div>
-                    <div>
-                      <dt>Official Email:</dt>
-                      <dd>transport@chrysalis.lk</dd>
-                    </div>
-                    <div>
-                      <dt>Office Address:</dt>
-                      <dd>21, Rodney Street, Colombo 08</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                {/* 24/7 Roadside Emergency */}
-                <div className="contact-box emergency-desk">
-                  <span className="desk-tag emergency">24/7 ROADSIDE EMERGENCY</span>
-                  <h4>Emergency &amp; Breakdown Line</h4>
-                  <p>Immediate assistance for mechanical failures, accidents, or driver emergencies.</p>
-                  <dl>
-                    <div>
-                      <dt>Duty Fleet Coordinator:</dt>
-                      <dd><strong>+94 77 123 4567</strong></dd>
-                    </div>
-                    <div>
-                      <dt>Alternate Duty Hotline:</dt>
-                      <dd>+94 71 890 1234</dd>
-                    </div>
-                    <div>
-                      <dt>Insurance Hotline:</dt>
-                      <dd>1301 (Sri Lanka Insurance Corp)</dd>
-                    </div>
-                    <div>
-                      <dt>Operating Hours:</dt>
-                      <dd>24 Hours / 7 Days a week</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                {/* Regional Desks */}
-                <div className="contact-box">
-                  <span className="desk-tag">EASTERN PROVINCE</span>
-                  <h4>Batticaloa Area Office</h4>
-                  <dl>
-                    <div>
-                      <dt>Transport Coordinator:</dt>
-                      <dd>+94 65 222 3450</dd>
-                    </div>
-                    <div>
-                      <dt>Email:</dt>
-                      <dd>batticaloa.ops@chrysalis.lk</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="contact-box">
-                  <span className="desk-tag">NORTHERN PROVINCE</span>
-                  <h4>Jaffna Regional Office</h4>
-                  <dl>
-                    <div>
-                      <dt>Transport Coordinator:</dt>
-                      <dd>+94 21 221 5670</dd>
-                    </div>
-                    <div>
-                      <dt>Email:</dt>
-                      <dd>jaffna.ops@chrysalis.lk</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="contact-box">
-                  <span className="desk-tag">SOUTHERN PROVINCE</span>
-                  <h4>Matara / Southern Desk</h4>
-                  <dl>
-                    <div>
-                      <dt>Transport Coordinator:</dt>
-                      <dd>+94 41 223 8900</dd>
-                    </div>
-                    <div>
-                      <dt>Email:</dt>
-                      <dd>matara.ops@chrysalis.lk</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="contact-box">
-                  <span className="desk-tag">CENTRAL HIGHLANDS</span>
-                  <h4>Nuwara Eliya Field Center</h4>
-                  <dl>
-                    <div>
-                      <dt>Transport Coordinator:</dt>
-                      <dd>+94 52 222 4110</dd>
-                    </div>
-                    <div>
-                      <dt>Email:</dt>
-                      <dd>nuwaraeliya.ops@chrysalis.lk</dd>
-                    </div>
-                  </dl>
                 </div>
               </div>
             </div>
