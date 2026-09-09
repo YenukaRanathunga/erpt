@@ -177,45 +177,36 @@ export default function HelpGuideModal({
             className={activeTab === "guide" ? "active" : ""}
             onClick={() => setActiveTab("guide")}
           >
-            <span className="tab-indicator" />
-            <strong>How to Request Transport</strong>
-            <small>Step-by-step requisition guide</small>
+            How to Request Transport
           </button>
           <button
             type="button"
             className={activeTab === "workflow" ? "active" : ""}
             onClick={() => setActiveTab("workflow")}
           >
-            <span className="tab-indicator" />
-            <strong>Approval Workflow &amp; Rules</strong>
-            <small>Authorization levels &amp; status</small>
+            Approval Workflow &amp; Rules
           </button>
           <button
             type="button"
             className={activeTab === "safety" ? "active" : ""}
             onClick={() => setActiveTab("safety")}
           >
-            <span className="tab-indicator" />
-            <strong>Fleet Rules &amp; Protocol</strong>
-            <small>Logbooks, safety &amp; breakdowns</small>
+            Fleet Rules &amp; Protocol
           </button>
           <button
             type="button"
             className={activeTab === "ticket" ? "active" : ""}
             onClick={() => setActiveTab("ticket")}
           >
-            <span className="tab-indicator" />
-            <strong>Submit Support Ticket</strong>
-            <small>Direct helpdesk form ({tickets.length})</small>
+            Submit Support Ticket
+            {tickets.length > 0 && <span className="tab-count">{tickets.length}</span>}
           </button>
           <button
             type="button"
             className={activeTab === "contacts" ? "active" : ""}
             onClick={() => setActiveTab("contacts")}
           >
-            <span className="tab-indicator" />
-            <strong>Helplines &amp; Desks</strong>
-            <small>24/7 Operations contacts</small>
+            Helplines &amp; Desks
           </button>
         </nav>
 
