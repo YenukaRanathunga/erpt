@@ -618,7 +618,7 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
           ))}
         </select>
       </label>
-      <label><span>Vehicle type *</span><select value={vehicleType} onChange={event => setVehicleType(event.target.value)}><option value="" disabled>Select vehicle type</option><option>Car</option><option>Van</option><option>Bus</option><option>Lorry</option><option>Cab</option><option>Other</option></select></label>
+      <label><span>Vehicle type *</span><select value={vehicleType} onChange={event => setVehicleType(event.target.value)}><option value="" disabled>Select vehicle type</option><option>Car</option><option>Van</option><option>Bus</option><option>Public transport</option><option>Lorry</option><option>Cab</option><option>Other</option></select></label>
       <label><span>Admin notes</span><textarea placeholder="Special requirements, route risks, accommodation or coordination notes" value={adminNotes} onChange={event => setAdminNotes(event.target.value)} /></label>
       {standaloneMode && <div className="demo-note"><span>i</span><p><strong>Standalone mode</strong> — allocate a vehicle company and type without linking a request.</p></div>}
       <div className="setup-checks"><p className={vehicle ? "done" : ""}><span>{vehicle ? "✓" : "1"}</span>Company confirmed</p><p className={vehicleType ? "done" : ""}><span>{vehicleType ? "✓" : "2"}</span>Vehicle type confirmed</p><p className={selected.length >= 1 || standaloneMode ? "done" : ""}><span>{selected.length >= 1 || standaloneMode ? "✓" : "3"}</span>{standaloneMode?"Standalone trip enabled":"Request selected"}</p></div>
