@@ -24,6 +24,14 @@ type Vehicle = Record<string, unknown> & { id: string; office?: string };
 type SharedState = { requests: Item[]; users: User[]; offices: string[]; vehicles: Vehicle[]; conversations: DirectConversation[] };
 type Membership = { name: string; email: string; role: Role; displayRole?: Role; displayTitle?: string; office: string; empNo?: string };
 type SqlClient = ReturnType<typeof getSql>;
+const APPROVAL_ROLES = new Set<Role>(["project_manager", "project_director", "ceo", "head_operations"]);
+
+function canApproveRequest(item: Item, member: Pick<Membership, "name" | "role" | "office">): boolean {
+  if (!APPROVAL_ROLES.has(member.role)) return false;
+  if (item.approverNames?.includes(member.name)) return true;
+  const roleMatches = item.approverRoles?.includes(member.role) || (item.awaitingRole ?? "project_manager") === member.role;
+  return Boolean(roleMatches && (item.office ?? "Head Office") === member.office);
+}
 
 const officialEmail = (value: unknown) => typeof value === "string" && /^[^@\s]+@chrysaliscatalyz\.com$/i.test(value.trim()) ? value.trim().toLowerCase() : null;
 
@@ -41,8 +49,7 @@ async function sendApprovalAlerts(sql: SqlClient, state: SharedState, requests: 
   const from = process.env.RESEND_FROM_EMAIL ?? "Chrysalis Mobility <notifications@chrysaliscatalyz.com>";
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://vercel-share-drab.vercel.app").replace(/\/$/, "");
   for (const request of requests) {
-    const approverNames = Array.isArray(request.approverNames) ? [...new Set(request.approverNames.filter(name => typeof name === "string"))] : [];
-    const approvers = state.users.filter(user => user.active && approverNames.includes(user.name));
+    const approvers = state.users.filter(user => user.active && canApproveRequest(request,user));
     await Promise.all(approvers.map(async approver => {
       const to = await approverEmail(sql, approver);
       if (!to) return;
@@ -217,7 +224,7 @@ function visibleState(state: SharedState, member: Membership): SharedState {
     ? state.requests.filter(officeMatches)
     : member.role === "user"
       ? state.requests.filter(item => item.person === member.name || operational(item.status ?? ""))
-      : state.requests.filter(item => item.person === member.name || (item.approverNames?.length ? item.approverNames.includes(member.name) : item.awaitingRole === member.role) || operational(item.status ?? ""));
+      : state.requests.filter(item => item.person === member.name || canApproveRequest(item,member) || operational(item.status ?? ""));
   const requests = withoutDuplicateRequests(visibleRequests);
   const users = state.users.filter(item=>item.active).map(({authEmail: _authEmail,...user})=>user);
   const vehicles = member.role === "admin" ? state.vehicles.filter(officeMatches) : [];
@@ -235,12 +242,12 @@ function mergeAuthorized(current: SharedState, incoming: SharedState, member: Me
     if (!next) return item;
     if (member.role === "admin" && officeMatches(item)) return next;
     const passengerNames = Array.isArray(item.passengers) ? item.passengers.filter(name=>typeof name === "string") : [];
-    const canMessage = item.person === member.name || passengerNames.includes(member.name) || item.approverNames?.includes(member.name) || (!item.approverNames?.length && item.awaitingRole === member.role);
+    const canMessage = item.person === member.name || passengerNames.includes(member.name) || canApproveRequest(item,member);
     const withMessages = appendAuthorizedMessages(item,next,member,Boolean(canMessage));
     if (item.person === member.name && next.status === "Cancelled" && !item.dispatchedAt && !["Trip scheduled", "Completed", "Cancelled"].includes(item.status ?? "")) {
       return { ...withMessages, status: "Cancelled", tone: "red", cancelledAt: next.cancelledAt, cancelledBy: member.name, cancellationReason: next.cancellationReason };
     }
-    if (["project_manager", "project_director", "ceo", "head_operations"].includes(member.role) && (item.approverNames?.length ? item.approverNames.includes(member.name) : item.awaitingRole === member.role)) {
+    if (canApproveRequest(item,member)) {
       return { ...withMessages, status: next.status, tone: next.tone, approvedBy: next.approvedBy, approvedAt: next.approvedAt, decisionComment: next.decisionComment, decisionBy: next.decisionBy, decisionAt: next.decisionAt };
     }
     return withMessages;
