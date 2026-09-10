@@ -1095,6 +1095,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const revisionRef = useRef(0);
   const applyingRemoteRef = useRef(false);
   const savingRef = useRef(false);
+  const lastSavedStateRef = useRef("");
 
   useEffect(() => {
     const restore = window.setTimeout(() => {
@@ -1161,15 +1162,18 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   useEffect(() => {
     if (!sharedReady) return;
     if (applyingRemoteRef.current) { applyingRemoteRef.current = false; return; }
+    const state: SharedState = { requests, users, offices, vehicles, conversations };
+    const serialized = JSON.stringify(state);
+    if (serialized === lastSavedStateRef.current) return;
     const timer = window.setTimeout(async () => {
       try {
         savingRef.current = true;
         setSyncStatus("saving");
-        const state: SharedState = { requests, users, offices, vehicles, conversations };
-        const response = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state }) });
+        const response = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: serialized });
         const result = await response.json() as { state?: SharedState; revision?: number; membership?: Membership; error?: string };
         if (!response.ok) throw new Error(result.error ?? "Sync failed");
         revisionRef.current = result.revision ?? revisionRef.current;
+        lastSavedStateRef.current = serialized;
         setSyncStatus("synced");
       } catch { setSyncStatus("offline"); }
       finally { savingRef.current = false; }
@@ -1179,14 +1183,23 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
 
   useEffect(() => {
     if (!sharedReady) return;
+    let pollFailures = 0;
     const poll = window.setInterval(async () => {
       if (savingRef.current) return;
       try {
         const response = await fetch("/api/state", { cache: "no-store" });
         const data = await response.json() as { state?: SharedState | null; revision?: number; membership?: Membership };
         if (!response.ok || !data.state || !data.membership) throw new Error("Sync unavailable");
+        pollFailures = 0;
         if ((data.revision ?? 0) > revisionRef.current) {
           revisionRef.current = data.revision ?? revisionRef.current;
+          lastSavedStateRef.current = JSON.stringify({
+            requests: data.state.requests,
+            users: data.state.users,
+            offices: data.state.offices,
+            vehicles: data.state.vehicles,
+            conversations: data.state.conversations ?? [],
+          });
           applyingRemoteRef.current = true;
           setRequests(data.state.requests);
           setUsers(data.state.users);
@@ -1199,8 +1212,13 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
           setAdminOffice(data.membership.office);
         }
         setSyncStatus("synced");
-      } catch { setSyncStatus("offline"); }
-    }, 4000);
+      } catch {
+        pollFailures++;
+        if (pollFailures >= 3) {
+          setSyncStatus("offline");
+        }
+      }
+    }, 5000);
     return () => window.clearInterval(poll);
   }, [sharedReady]);
 

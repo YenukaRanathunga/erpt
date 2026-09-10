@@ -269,14 +269,37 @@ function mergeAuthorized(current: SharedState, incoming: SharedState, member: Me
   return { ...current, requests, vehicles, conversations };
 }
 
+const userEmailCache = new Map<string, { email: string | null; expires: number }>();
+
 async function viewerIdentity() {
   const employee = await currentEmployeeSession();
   if (employee) return { employee, email: null };
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   if (!userId) return { employee: null, email: null };
-  const user = await currentUser();
-  const email = user?.emailAddresses.find(item => item.id === user.primaryEmailAddressId)?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
-  return { employee: null, email };
+
+  const now = Date.now();
+  const cached = userEmailCache.get(userId);
+  if (cached && cached.expires > now) {
+    return { employee: null, email: cached.email };
+  }
+
+  const claims = sessionClaims as Record<string, unknown> | null;
+  const claimsEmail = typeof claims?.email === "string" ? claims.email : typeof claims?.primary_email === "string" ? claims.primary_email : null;
+  if (claimsEmail && claimsEmail.includes("@")) {
+    userEmailCache.set(userId, { email: claimsEmail, expires: now + 5 * 60 * 1000 });
+    return { employee: null, email: claimsEmail };
+  }
+
+  try {
+    const user = await currentUser();
+    const email = user?.emailAddresses.find(item => item.id === user.primaryEmailAddressId)?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
+    userEmailCache.set(userId, { email, expires: now + 5 * 60 * 1000 });
+    return { employee: null, email };
+  } catch (error) {
+    console.error("Clerk user identity lookup error:", error);
+    if (cached) return { employee: null, email: cached.email };
+    return { employee: null, email: null };
+  }
 }
 
 async function readState() {

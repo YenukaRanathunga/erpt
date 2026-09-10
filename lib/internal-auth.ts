@@ -62,7 +62,7 @@ export function verifyEmployeeLoginChallenge(token?: string | null): EmployeeLog
 
 export async function currentEmployeeSession() {
   const store = await cookies();
-  return verifyEmployeeSession(store.get(EMP_SESSION_COOKIE)?.value);
+  return verifyEmployeeSession(store.get(EMP_SESSION_COOKIE)?.value || store.get(LEGACY_EMP_SESSION_COOKIE)?.value);
 }
 
 export const employeeSessionMaxAge = SESSION_SECONDS;
