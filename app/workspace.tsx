@@ -690,7 +690,7 @@ function RequestChat({ requests, currentUser, currentRole, onUpdateRequest }: { 
 }
 
 function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCancelRequest }: { requests: RequestItem[]; currentUser: string; approvedOnly?: boolean; onNew: () => void; onCancelRequest: (id: string, patch: Partial<RequestItem>) => void }) {
-  type CalendarEvent = { id: string; owner: string; route: string; date: Date; day: number; time: string; end: string; returnDate: string; returnTime: string; departureDate: string; office: string; status: string; tone: string; passengers: number; purpose: string; vehicleCompany?: string; vehicleType?: string; driver?: string; tripId?: string };
+  type CalendarEvent = { id: string; owner: string; route: string; date: Date; day: number; time: string; end: string; returnDate: string; returnTime: string; departureDate: string; office: string; status: string; tone: string; passengers: number; passengerNames: string[]; purpose: string; vehicleCompany?: string; vehicleType?: string; driver?: string; tripId?: string };
   const personInitials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join("").toUpperCase();
   const startOfDay = (value: Date) => new Date(value.getFullYear(),value.getMonth(),value.getDate());
   const startOfWorkWeek = (value: Date) => { const date=startOfDay(value); const day=date.getDay(); date.setDate(date.getDate()-(day===0?6:day-1)); return date; };
@@ -714,11 +714,12 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
   const miniLeadingDays = (miniDate.getDay()+6)%7;
   const miniDaysInMonth = new Date(miniDate.getFullYear(),miniDate.getMonth()+1,0).getDate();
   const hours = Array.from({length:13},(_,index)=>index+6);
-  const requestEvents: CalendarEvent[] = requests.flatMap((item,index) => {
+  const requestEvents: CalendarEvent[] = requests.flatMap(item => {
     const date = parseRequestDate(item.date);
     const returnTime = item.returnTime ?? `${String(Math.min(Number.parseInt(item.time,10)+3,19)).padStart(2,"0")}:00`;
     const returnDate = formatTripDate(item.returnDate ?? item.date);
     const departureDate = formatTripDate(item.date);
+    const passengerNames = Array.from(new Set([item.person,...(item.passengers ?? [])].filter(Boolean)));
     return date ? [{
       id: item.id,
       owner: item.person,
@@ -733,7 +734,8 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
       office: officeForRequest(item),
       status: item.status,
       tone: item.tone,
-      passengers: item.passengers?.length ?? (index % 3 + 1),
+      passengers: passengerNames.length,
+      passengerNames,
       purpose: item.purpose ?? "Field visit and programme coordination",
       vehicleCompany: item.vehicleCompany ?? (item.vehicle ? item.vehicle.split(" · ")[0] : undefined),
       vehicleType: item.vehicleType ?? (item.vehicle ? item.vehicle.split(" · ")[1] : undefined),
@@ -876,7 +878,7 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, onNew, onCa
             </div>
             <section className="trip-modal-passengers">
               <div><small>PEOPLE TRAVELLING</small><strong>{selected.passengers} {selected.passengers===1?"person":"people"}</strong></div>
-              <div className="trip-people-list">{[selected.owner,...["Keerthi Indrajith","Amali Perera","Dilan Jayawardena","Nadeesha Fernando"].filter(name=>name!==selected.owner).slice(0,Math.max(0,selected.passengers-1))].map((name,index)=><div key={`${selected.id}-${name}`}><span>{personInitials(name)}</span><p><strong>{name}{name===currentUser?" (You)":""}</strong><small>{index===0?"Requester / traveller":"Passenger"}</small></p></div>)}</div>
+              <div className="trip-people-list">{selected.passengerNames.map((name,index)=><div key={`${selected.id}-${name}`}><span>{personInitials(name)}</span><p><strong>{name}{name===currentUser?" (You)":""}</strong><small>{index===0?"Requester / traveller":"Passenger"}</small></p></div>)}</div>
             </section>
             <footer className="trip-modal-footer"><p><strong>{canRequesterCancel?"Cancellation available before dispatch":"Shared operational information"}</strong><span>{selectedRequest?.dispatchedAt?"This trip has started. Only an Admin can cancel it now.":"Journey details are visible to team users. Budget and financial details remain private."}</span></p>{canRequesterCancel&&<button className="cancel-own-request" onClick={cancelOwnRequest}>× Cancel my request</button>}<button className="secondary" onClick={()=>setSelectedId(null)}>Done</button></footer>
           </section>
