@@ -43,75 +43,88 @@ export default async function SignInPage() {
           </div>
         </header>
 
-        <div className="cinema-story">
-          <div className="cinema-headline-eyebrow">
-            <span className="eyebrow-line" />
-            <span>INTELLIGENT FLEET &amp; LOGISTICS</span>
+        {/* 3D Cinematic Travel & Mobility Hologram Stage */}
+        <div className="travel-3d-stage">
+          <div className="travel-hologram">
+            {/* Holographic Radar & Orbital Rings */}
+            <div className="travel-radar-ring outer-ring" />
+            <div className="travel-radar-ring mid-ring" />
+            <div className="travel-radar-sweep" />
+
+            {/* 3D Wireframe Globe Mesh */}
+            <div className="travel-globe-3d">
+              <div className="globe-lat-line lat-1" />
+              <div className="globe-lat-line lat-2" />
+              <div className="globe-lat-line lat-3" />
+              <div className="globe-long-line long-1" />
+              <div className="globe-long-line long-2" />
+              <div className="globe-core-glow" />
+            </div>
+
+            {/* Glowing Inter-Office Route Trajectories */}
+            <svg className="travel-routes-svg" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="routeGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#818cf8" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.9" />
+                </linearGradient>
+                <linearGradient id="routeGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.85" />
+                </linearGradient>
+              </defs>
+              <path d="M 70,220 C 85,130 185,95 270,135" stroke="url(#routeGrad1)" strokeWidth="2.5" strokeDasharray="6 4" className="animated-route-1" />
+              <path d="M 95,255 C 135,215 215,235 255,175" stroke="url(#routeGrad2)" strokeWidth="2" strokeDasharray="4 4" className="animated-route-2" />
+              <path d="M 125,85 C 175,125 215,175 205,265" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" strokeDasharray="3 3" />
+            </svg>
+
+            {/* Waypoint Nodes for Mobility Hubs */}
+            <div className="waypoint-node node-head-office">
+              <span className="waypoint-pulse" />
+              <span className="waypoint-dot" />
+              <span className="waypoint-label">Head Office</span>
+            </div>
+            <div className="waypoint-node node-central">
+              <span className="waypoint-pulse" />
+              <span className="waypoint-dot" />
+              <span className="waypoint-label">Central Hub</span>
+            </div>
+            <div className="waypoint-node node-northern">
+              <span className="waypoint-pulse" />
+              <span className="waypoint-dot" />
+              <span className="waypoint-label">Northern Hub</span>
+            </div>
+            <div className="waypoint-node node-southern">
+              <span className="waypoint-pulse" />
+              <span className="waypoint-dot" />
+              <span className="waypoint-label">Southern Hub</span>
+            </div>
+
+            {/* 3D Floating Vehicle / Telemetry Indicator */}
+            <div className="travel-vehicle-badge">
+              <div className="vehicle-badge-glow" />
+              <div className="vehicle-icon-wrap">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                  <circle cx="7" cy="17" r="2" />
+                  <path d="M9 17h6" />
+                  <circle cx="17" cy="17" r="2" />
+                </svg>
+              </div>
+              <div className="vehicle-meta">
+                <strong>Islandwide Mobility Hub</strong>
+                <small>Active dispatch &amp; route clearance</small>
+              </div>
+            </div>
           </div>
-          
-          <h1 className="cinema-hero-title">
-            Every request.
-            <span className="cinema-hero-gradient">One clear journey.</span>
-          </h1>
 
-          <p className="cinema-hero-description">
-            Plan, authorize and synchronize staff transport across all provincial hubs through one high-precision operational console.
-          </p>
-
-          <div className="cinema-steps-3d">
-            <div className="step-card step-1">
-              <div className="step-badge">01</div>
-              <div className="step-info">
-                <strong>Request</strong>
-                <small>Journey &amp; budget</small>
-              </div>
-            </div>
-            <div className="step-connector">
-              <span className="connector-dot" />
-            </div>
-            <div className="step-card step-2">
-              <div className="step-badge">02</div>
-              <div className="step-info">
-                <strong>Approve</strong>
-                <small>Multi-role audit</small>
-              </div>
-            </div>
-            <div className="step-connector">
-              <span className="connector-dot" />
-            </div>
-            <div className="step-card step-3">
-              <div className="step-badge">03</div>
-              <div className="step-info">
-                <strong>Operate</strong>
-                <small>Dispatch &amp; fulfill</small>
-              </div>
-            </div>
-          </div>
-
-          <div className="cinema-metrics-bar">
-            <div className="metric-chip">
-              <span className="metric-icon">✦</span>
-              <div>
-                <strong>Islandwide Coverage</strong>
-                <small>9 Active Project Hubs</small>
-              </div>
-            </div>
-            <div className="metric-divider" />
-            <div className="metric-chip">
-              <span className="metric-icon">🛡</span>
-              <div>
-                <strong>Role-Based Control</strong>
-                <small>Multi-level approvals</small>
-              </div>
-            </div>
+          {/* Minimalist Punchy Headline (No clutter / Minimal words) */}
+          <div className="travel-clean-caption">
+            <h2>Smart Mobility. <em>Every Journey.</em></h2>
+            <p>Chrysalis official staff transport &amp; vehicle management console</p>
           </div>
         </div>
-
-        <footer className="cinema-visual-footer">
-          <span>Enterprise mobility platform</span>
-          <i>•</i>
-          <span>ISO standard fleet workflow</span>
-        </footer>
       </section>
 
       {/* Right 3D Floating Glassmorphic Login Panel */}
