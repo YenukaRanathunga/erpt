@@ -35,7 +35,7 @@ function canApproveRequest(item: Item, member: Pick<Membership, "name" | "role" 
 
 const officialEmail = (value: unknown) => typeof value === "string" && /^[^@\s]+@chrysaliscatalyz\.com$/i.test(value.trim()) ? value.trim().toLowerCase() : null;
 
-async function approverEmail(sql: SqlClient, user: User): Promise<string | null> {
+async function recipientEmail(sql: SqlClient, user: User): Promise<string | null> {
   const assigned = officialEmail(user.authEmail) ?? officialEmail(user.email);
   if (assigned) return assigned;
   if (!user.empNo) return null;
@@ -43,15 +43,33 @@ async function approverEmail(sql: SqlClient, user: User): Promise<string | null>
   return officialEmail(rows[0]?.email);
 }
 
+const escapeHtml = (value: unknown) => String(value ?? "Not recorded").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+
+function workflowEmailHtml(request: Item, heading: string, intro: string, buttonLabel: string, appUrl: string) {
+  const passengerCount = Array.isArray(request.passengers) ? request.passengers.length : 1;
+  const rows = [
+    ["Request reference", request.id],
+    ["Requester", request.person],
+    ["Base office", request.office ?? "Head Office"],
+    ["Route", request.route],
+    ["Travel", `${String(request.date ?? "Not recorded")} · ${String(request.time ?? "Not recorded")}`],
+    ["Return", `${String(request.returnDate ?? "Not recorded")} · ${String(request.returnTime ?? "Not recorded")}`],
+    ["Request type", request.requestType],
+    ["Passengers", `${passengerCount} traveller${passengerCount === 1 ? "" : "s"}`],
+  ];
+  const details = rows.map(([label,value]) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #e7edf2;color:#64748b;font-size:12px;width:38%">${escapeHtml(label)}</td><td style="padding:9px 12px;border-bottom:1px solid #e7edf2;color:#102f4d;font-size:13px;font-weight:700">${escapeHtml(value)}</td></tr>`).join("");
+  return `<!doctype html><html><body style="margin:0;background:#f4f7fa;font-family:Arial,sans-serif;color:#102f4d"><div style="max-width:620px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #d9e2ea;border-radius:12px;overflow:hidden"><div style="padding:22px 26px;background:#082744;color:#fff"><div style="font-size:12px;letter-spacing:1.4px;color:#8fd8ff">CHRYSALIS MOBILITY OPERATIONS</div><h1 style="margin:10px 0 0;font-size:24px">${escapeHtml(heading)}</h1></div><div style="padding:26px"><p style="margin:0 0 18px;line-height:1.65">${escapeHtml(intro)}</p><table style="width:100%;border-collapse:collapse;border:1px solid #e7edf2;border-radius:8px">${details}</table><a href="${escapeHtml(appUrl)}" style="display:inline-block;margin-top:24px;padding:13px 20px;border-radius:8px;background:#0f6cbd;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(buttonLabel)}</a><p style="margin:22px 0 0;color:#64748b;font-size:12px;line-height:1.5">This is an automatic operational alert. Sign in with your official work account to view the full request and take action.</p></div></div></div></body></html>`;
+}
 async function sendApprovalAlerts(sql: SqlClient, state: SharedState, requests: Item[]) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || !requests.length) return;
   const from = process.env.RESEND_FROM_EMAIL ?? "Chrysalis Mobility <notifications@chrysaliscatalyz.com>";
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://vercel-share-drab.vercel.app").replace(/\/$/, "");
   for (const request of requests) {
-    const approvers = state.users.filter(user => user.active && canApproveRequest(request,user));
+    const assignedNames = request.approverNames ?? [];
+    const approvers = state.users.filter(user => user.active && canApproveRequest(request,user) && (!assignedNames.length || assignedNames.includes(user.name)));
     await Promise.all(approvers.map(async approver => {
-      const to = await approverEmail(sql, approver);
+      const to = await recipientEmail(sql, approver);
       if (!to) return;
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -59,8 +77,8 @@ async function sendApprovalAlerts(sql: SqlClient, state: SharedState, requests: 
         body: JSON.stringify({
           from,
           to: [to],
-          subject: "New mobility request awaits your approval",
-          html: `<!doctype html><html><body style="margin:0;background:#f4f7fa;font-family:Arial,sans-serif;color:#102f4d"><div style="max-width:600px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #d9e2ea;border-radius:12px;overflow:hidden"><div style="padding:22px 26px;background:#082744;color:#fff"><div style="font-size:12px;letter-spacing:1.4px;color:#8fd8ff">CHRYSALIS MOBILITY OPERATIONS</div><h1 style="margin:10px 0 0;font-size:24px">New approval is waiting</h1></div><div style="padding:26px"><p style="margin:0;line-height:1.65">A new vehicle request has been assigned to your approval queue. For privacy, request details are available only inside the secure workspace.</p><a href="${appUrl}" style="display:inline-block;margin-top:24px;padding:13px 20px;border-radius:8px;background:#0f6cbd;color:#fff;text-decoration:none;font-weight:700">Open approval queue</a><p style="margin:22px 0 0;color:#64748b;font-size:12px;line-height:1.5">This is an automatic operational alert. Sign in with your official work account to review the request.</p></div></div></div></body></html>`,
+          subject: `New mobility request ${request.id} awaits your approval`,
+          html: workflowEmailHtml(request, "New approval is waiting", "A mobility request has been assigned to your approval queue.", "Open approval queue", appUrl),
         }),
       });
       if (!response.ok) console.error("Approval email delivery failed", response.status);
@@ -68,6 +86,31 @@ async function sendApprovalAlerts(sql: SqlClient, state: SharedState, requests: 
   }
 }
 
+async function sendAdminAlerts(sql: SqlClient, state: SharedState, requests: Item[]) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !requests.length) return;
+  const from = process.env.RESEND_FROM_EMAIL ?? "Chrysalis Mobility <notifications@chrysaliscatalyz.com>";
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "https://vercel-share-drab.vercel.app").replace(/\/$/, "");
+  for (const request of requests) {
+    const office = String(request.office ?? "Head Office");
+    const admins = state.users.filter(user => user.active && user.role === "admin" && user.office === office);
+    await Promise.all(admins.map(async admin => {
+      const to = await recipientEmail(sql, admin);
+      if (!to) return;
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `admin-alert-${request.id}-${admin.id}` },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject: `Approved mobility request ${request.id} is ready to arrange`,
+          html: workflowEmailHtml(request, "Approved request ready for administration", "The approver has approved this mobility request. It is now ready for vehicle and trip arrangements.", "Open admin trip queue", appUrl),
+        }),
+      });
+      if (!response.ok) console.error("Admin email delivery failed", response.status);
+    }));
+  }
+}
 function requestFingerprint(item: Item): string {
   return [item.person, item.office, item.route, item.date, item.time, item.requestDate, item.budget, JSON.stringify(item.passengers ?? [])]
     .map(value => String(value ?? "").trim().toLowerCase())
@@ -357,6 +400,8 @@ export async function PUT(request: Request) {
     const nextState = state ? mergeAuthorized(state, payload.state, membership) : payload.state;
     const existingRequestIds = new Set(state?.requests.map(item => item.id) ?? []);
     const approvalAlerts = nextState.requests.filter(item => !existingRequestIds.has(item.id) && item.person === membership.name && item.status === "Awaiting approval");
+    const previousRequests = new Map(state?.requests.map(item => [item.id,item]) ?? []);
+    const adminAlerts = APPROVAL_ROLES.has(membership.role) ? nextState.requests.filter(item => item.status === "Approved" && previousRequests.get(item.id)?.status !== "Approved") : [];
     const saved = await sql`
       INSERT INTO app_state (id, state_json, revision, updated_at)
       VALUES (1, ${JSON.stringify(nextState)}::jsonb, 1, NOW())
@@ -367,6 +412,7 @@ export async function PUT(request: Request) {
       RETURNING revision
     ` as unknown as Array<{ revision: number }>;
     await sendApprovalAlerts(sql, nextState, approvalAlerts).catch(error => console.error("Unable to send approval alerts", error));
+    await sendAdminAlerts(sql, nextState, adminAlerts).catch(error => console.error("Unable to send admin alerts", error));
     return Response.json({
       revision: Number(saved[0]?.revision ?? 1),
       state: visibleState(nextState, membership),
