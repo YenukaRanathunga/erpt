@@ -390,11 +390,14 @@ function RequestForm({ requester, requesterRole, requesterOffice, requesterDetai
     const rank: Record<ApprovalRole,number> = { project_manager: 1, project_director: 2, head_operations: 3, ceo: 4 };
     return approvers
       .filter(approver => (["project_manager","project_director","head_operations","ceo"] as Role[]).includes(approver.role))
+      .filter(approver => !/senior\s+project\s+(?:coordinator|cordinator|co-ordinator)/i.test(approver.position ?? ""))
       .filter(approver => !query || `${approver.name} ${approver.position ?? ""} ${approver.project ?? ""} ${approver.office} ${roleConfig[approver.role].label}`.toLowerCase().includes(query))
       .sort((a,b) => rank[a.role as ApprovalRole] - rank[b.role as ApprovalRole] || a.name.localeCompare(b.name));
   },[approvers,approverSearch]);
   const approvalRoute = chrBudgetRoute ? "CHR budget request → CEO → Admin" : directorRoute ? "Project Director → CEO → Admin" : hodRoute ? "HOD request → CEO → Admin" : requesterRole === "admin" && office === "Head Office" ? "Colombo Admin → Head of Operations → Admin operations" : requesterRole === "project_manager" ? "Project Manager → Project Director → Admin" : `Requester → ${roleConfig[approvalRole].label} → Admin`;
   const [origin, setOrigin] = useState("Colombo Head Office"); const [destination, setDestination] = useState("Badulla"); const [stops,setStops] = useState<string[]>([]); const [requestDate,setRequestDate] = useState(new Date().toISOString().slice(0,10)); const [travelDate, setTravelDate] = useState("2026-08-17"); const [departure, setDeparture] = useState("06:30"); const [returnDate,setReturnDate] = useState("2026-08-17"); const [returnTime,setReturnTime] = useState("19:00"); const [purpose, setPurpose] = useState("Procurement-related works and staff capacity building");
+  const hasStandardTravelHours = requestType !== "Other";
+  const isWithinStandardTravelHours = (time: string) => time >= "05:00" && time <= "21:00";
   const [passengers,setPassengers] = useState([requester]);
   const [externalPassengers,setExternalPassengers] = useState<string[]>([]);
   const [otherPassengerName,setOtherPassengerName] = useState("");
@@ -429,6 +432,7 @@ function RequestForm({ requester, requesterRole, requesterOffice, requesterDetai
   const submitRequest = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittingRef.current) { announce("This request is already being submitted."); return; }
+    if (hasStandardTravelHours && (!isWithinStandardTravelHours(departure) || !isWithinStandardTravelHours(returnTime))) { announce("Town, Field and Inter Office requests must use departure and return times between 05:00 and 21:00."); return; }
     if (!holders.length) { announce("Select at least one budget holder or approver."); return; }
     submittingRef.current = true;
     const parsedDate = new Date(`${travelDate}T00:00:00`);
