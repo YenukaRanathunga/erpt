@@ -1194,7 +1194,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
       try {
         savingRef.current = true;
         setSyncStatus("saving");
-        const response = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: serialized });
+        const response = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state }) });
         const result = await response.json() as { state?: SharedState; revision?: number; membership?: Membership; error?: string };
         if (response.status === 401) { window.location.assign("/sign-in"); return; }
         if (response.status === 403) { setAccessError(result.error ?? "Access has not been assigned."); return; }
