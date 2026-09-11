@@ -9,24 +9,20 @@ export default async function SignInPage() {
   if (employee || userId) redirect("/");
 
   return (
-    <main className="login-cinema">
-      {/* Dynamic 3D Cinematic Background Atmosphere */}
-      <div className="cinema-bg-canvas" aria-hidden="true">
-        <div className="cinema-mesh-grid" />
-        <div className="cinema-beam cinema-beam-cyan" />
-        <div className="cinema-beam cinema-beam-purple" />
-        <div className="cinema-beam cinema-beam-gold" />
-        <div className="cinema-floating-orb orb-1" />
-        <div className="cinema-floating-orb orb-2" />
-        <div className="cinema-floating-orb orb-3" />
-        <div className="cinema-3d-rings">
-          <div className="ring ring-outer" />
-          <div className="ring ring-mid" />
-          <div className="ring ring-inner" />
-        </div>
+    <main className="login-cinema light-travel-theme">
+      {/* Light Travel Atmospheric Canvas */}
+      <div className="travel-light-canvas" aria-hidden="true">
+        <div className="travel-sky-glow" />
+        <div className="travel-sun-beam" />
+        <div className="travel-geo-grid" />
+        <div className="travel-floating-cloud cloud-1" />
+        <div className="travel-floating-cloud cloud-2" />
+        <div className="travel-floating-cloud cloud-3" />
+        <div className="travel-flight-ring ring-1" />
+        <div className="travel-flight-ring ring-2" />
       </div>
 
-      {/* Left 3D Cinematic Narrative Section */}
+      {/* Left 3D Daylight Travel & Navigation Section */}
       <section className="login-cinema-visual" aria-label="Chrysalis Mobility Operations">
         <header className="cinema-brand">
           <div className="cinema-logo-capsule">
@@ -37,92 +33,101 @@ export default async function SignInPage() {
               <span>Mobility Operations</span>
             </div>
           </div>
-          <div className="cinema-live-pill">
-            <span className="live-beacon" />
-            <span>SECURE GATEWAY</span>
-          </div>
         </header>
 
-        {/* 3D Cinematic Travel & Mobility Hologram Stage */}
+        {/* 3D Isometric Daylight Travel Map & Navigation Stage */}
         <div className="travel-3d-stage">
-          <div className="travel-hologram">
-            {/* Holographic Radar & Orbital Rings */}
-            <div className="travel-radar-ring outer-ring" />
-            <div className="travel-radar-ring mid-ring" />
-            <div className="travel-radar-sweep" />
+          <div className="travel-map-viewport">
+            <div className="isometric-map-deck">
+              {/* Isometric Ground Layers */}
+              <div className="iso-map-base">
+                <div className="iso-grid-lines" />
+                <div className="iso-river-curve" />
+                <div className="iso-park-zone zone-1" />
+                <div className="iso-park-zone zone-2" />
+              </div>
 
-            {/* 3D Wireframe Globe Mesh */}
-            <div className="travel-globe-3d">
-              <div className="globe-lat-line lat-1" />
-              <div className="globe-lat-line lat-2" />
-              <div className="globe-lat-line lat-3" />
-              <div className="globe-long-line long-1" />
-              <div className="globe-long-line long-2" />
-              <div className="globe-core-glow" />
+              {/* 3D Isometric Buildings & Hub Landmarks */}
+              <div className="iso-buildings">
+                <div className="iso-building bldg-1" />
+                <div className="iso-building bldg-2" />
+                <div className="iso-building bldg-3" />
+                <div className="iso-building bldg-4" />
+                <div className="iso-building bldg-5" />
+              </div>
+
+              {/* Curving 3D Navigation Route Vector */}
+              <svg className="iso-route-svg" viewBox="0 0 360 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="travelPathGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0284c7" />
+                    <stop offset="50%" stopColor="#0ea5e9" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                  </linearGradient>
+                  <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
+                {/* Secondary transit links */}
+                <path d="M 80,240 C 130,220 180,250 250,190" stroke="rgba(2, 132, 199, 0.28)" strokeWidth="3" strokeDasharray="6 6" />
+                {/* Primary highway route */}
+                <path d="M 90,260 C 120,180 200,190 280,110" stroke="url(#travelPathGrad)" strokeWidth="4.5" strokeLinecap="round" strokeDasharray="8 6" className="animated-travel-path" filter="url(#routeGlow)" />
+              </svg>
+
+              {/* Hub Destination Waypoints */}
+              <div className="iso-waypoint hub-colombo">
+                <span className="hub-marker-ping" />
+                <span className="hub-marker-dot" />
+                <span className="hub-tag">Head Office</span>
+              </div>
+              <div className="iso-waypoint hub-kandy">
+                <span className="hub-marker-ping" />
+                <span className="hub-marker-dot" />
+                <span className="hub-tag">Central Hub</span>
+              </div>
+              <div className="iso-waypoint hub-galle">
+                <span className="hub-marker-ping" />
+                <span className="hub-marker-dot" />
+                <span className="hub-tag">Southern Hub</span>
+              </div>
+
+              {/* 3D Realistic Glossy Red Location Pin Standing Upright */}
+              <div className="iso-3d-pin-wrap">
+                <div className="pin-ground-shadow" />
+                <div className="pin-ground-pulse" />
+                <div className="pin-3d-stem">
+                  <div className="pin-head-3d">
+                    <div className="pin-inner-hole" />
+                    <div className="pin-specular-light" />
+                  </div>
+                  <div className="pin-needle-tip" />
+                </div>
+                <div className="pin-active-tag">Active Destination</div>
+              </div>
             </div>
 
-            {/* Glowing Inter-Office Route Trajectories */}
-            <svg className="travel-routes-svg" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="routeGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.9" />
-                  <stop offset="50%" stopColor="#818cf8" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.9" />
-                </linearGradient>
-                <linearGradient id="routeGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.85" />
-                </linearGradient>
-              </defs>
-              <path d="M 70,220 C 85,130 185,95 270,135" stroke="url(#routeGrad1)" strokeWidth="2.5" strokeDasharray="6 4" className="animated-route-1" />
-              <path d="M 95,255 C 135,215 215,235 255,175" stroke="url(#routeGrad2)" strokeWidth="2" strokeDasharray="4 4" className="animated-route-2" />
-              <path d="M 125,85 C 175,125 215,175 205,265" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" strokeDasharray="3 3" />
-            </svg>
-
-            {/* Waypoint Nodes for Mobility Hubs */}
-            <div className="waypoint-node node-head-office">
-              <span className="waypoint-pulse" />
-              <span className="waypoint-dot" />
-              <span className="waypoint-label">Head Office</span>
-            </div>
-            <div className="waypoint-node node-central">
-              <span className="waypoint-pulse" />
-              <span className="waypoint-dot" />
-              <span className="waypoint-label">Central Hub</span>
-            </div>
-            <div className="waypoint-node node-northern">
-              <span className="waypoint-pulse" />
-              <span className="waypoint-dot" />
-              <span className="waypoint-label">Northern Hub</span>
-            </div>
-            <div className="waypoint-node node-southern">
-              <span className="waypoint-pulse" />
-              <span className="waypoint-dot" />
-              <span className="waypoint-label">Southern Hub</span>
-            </div>
-
-            {/* 3D Floating Vehicle / Telemetry Indicator */}
-            <div className="travel-vehicle-badge">
-              <div className="vehicle-badge-glow" />
-              <div className="vehicle-icon-wrap">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Floating 3D Fleet Status Capsule */}
+            <div className="travel-fleet-badge">
+              <div className="fleet-badge-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
                   <circle cx="7" cy="17" r="2" />
                   <path d="M9 17h6" />
                   <circle cx="17" cy="17" r="2" />
                 </svg>
               </div>
-              <div className="vehicle-meta">
-                <strong>Islandwide Mobility Hub</strong>
-                <small>Active dispatch &amp; route clearance</small>
+              <div className="fleet-badge-text">
+                <strong>Islandwide Mobility Fleet</strong>
+                <small>Real-time vehicle telemetry &amp; dispatch</small>
               </div>
             </div>
           </div>
 
-          {/* Minimalist Punchy Headline (No clutter / Minimal words) */}
+          {/* Clean Punchy Headline (Minimal words) */}
           <div className="travel-clean-caption">
             <h2>Smart Mobility. <em>Every Journey.</em></h2>
-            <p>Chrysalis official staff transport &amp; vehicle management console</p>
+            <p>Intelligent staff transport &amp; islandwide fleet operations</p>
           </div>
         </div>
       </section>
@@ -167,10 +172,6 @@ export default async function SignInPage() {
             </div>
           </div>
         </div>
-
-        <p className="cinema-version">
-          <span>Chrysalis</span> · Internal Mobility Management · Version 2.0
-        </p>
       </section>
     </main>
   );
