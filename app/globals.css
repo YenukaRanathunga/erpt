@@ -336,126 +336,82 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 }
 
 /* =========================================================
-   3D ISOMETRIC MOBILITY FLEET & TRANSPORT STAGE
-   (Matching user uploaded 3D fleet vehicle pattern)
+   FULL-AREA 3D ISOMETRIC MOBILITY FLEET SECTION
+   (User requested: 3D fleet fills the entire left section)
    ========================================================= */
-.travel-3d-stage {
+.login-cinema-visual.visual-full-fleet-mode {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: auto 0;
-  padding-block: 16px;
-  perspective: 1200px;
-  width: 100%;
+  justify-content: space-between;
+  padding: 40px 5vw 36px 5vw;
 }
 
-.travel-fleet-viewport {
-  position: relative;
-  width: min(480px, 94vw);
-  height: min(340px, 72vw);
-  display: grid;
-  place-items: center;
-  perspective: 1100px;
-}
-
-/* 3D Isometric Fleet Stage Card */
-.isometric-fleet-card {
-  position: relative;
-  width: min(430px, 88vw);
-  height: min(265px, 58vw);
-  border-radius: 26px;
-  background: #ffffff;
-  border: 3px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 
-    -20px 28px 60px rgba(2, 132, 199, 0.22),
-    0 12px 28px rgba(15, 23, 42, 0.1),
-    0 8px 0 #93c5fd,
-    0 12px 18px rgba(2, 132, 199, 0.35);
-  transform: rotateX(24deg) rotateY(-14deg) rotateZ(3deg);
-  transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s;
-  animation: fleetStageFloat 6s ease-in-out infinite alternate;
-}
-
-@keyframes fleetStageFloat {
-  0% { transform: rotateX(24deg) rotateY(-14deg) rotateZ(3deg) translateY(0); }
-  100% { transform: rotateX(21deg) rotateY(-11deg) rotateZ(2deg) translateY(-10px); }
-}
-
-.isometric-fleet-card:hover {
-  transform: rotateX(18deg) rotateY(-8deg) rotateZ(1deg) translateY(-12px) scale(1.02);
-  box-shadow: 
-    -26px 36px 75px rgba(2, 132, 199, 0.28),
-    0 16px 36px rgba(15, 23, 42, 0.14),
-    0 10px 0 #60a5fa;
-}
-
-/* 3D Isometric Image Frame */
-.fleet-img-frame {
+/* Full Bleed Background Canvas */
+.visual-full-fleet-bg {
   position: absolute;
   inset: 0;
-  border-radius: 22px;
   overflow: hidden;
-  background: #f8fafc;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.fleet-isometric-img {
+.fleet-full-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
-  display: block;
-  transform: scale(1.04);
-  transition: transform 0.8s ease;
+  transform: scale(1.05);
+  animation: fleetBgSlowZoom 25s ease-in-out infinite alternate;
 }
 
-.isometric-fleet-card:hover .fleet-isometric-img {
-  transform: scale(1.08);
+@keyframes fleetBgSlowZoom {
+  0% { transform: scale(1.04) translate(0, 0); }
+  100% { transform: scale(1.1) translate(-15px, -10px); }
 }
 
-.fleet-surface-sheen {
+/* Daylight Tints to maintain high legibility */
+.fleet-full-tint {
   position: absolute;
   inset: 0;
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 45%, rgba(2, 132, 199, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.42) 0%, rgba(224, 242, 254, 0.28) 40%, rgba(255, 255, 255, 0.48) 100%);
   pointer-events: none;
 }
 
-.fleet-vignette-rim {
+.fleet-full-vignette {
   position: absolute;
   inset: 0;
-  border-radius: 22px;
-  box-shadow: inset 0 0 24px rgba(2, 132, 199, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    inset 0 0 60px rgba(2, 132, 199, 0.18),
+    inset -40px 0 80px rgba(240, 249, 255, 0.85);
   pointer-events: none;
 }
 
-/* Animated Fleet Highway Route Trace */
-.fleet-trace-svg {
+/* Full Area Route Flow */
+.full-fleet-route-svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
 }
 
-.animated-fleet-trace {
-  animation: fleetTraceFlow 2.5s linear infinite;
+.animated-full-route {
+  animation: fullRouteFlow 3s linear infinite;
 }
 
-@keyframes fleetTraceFlow {
-  to { stroke-dashoffset: -32; }
+@keyframes fullRouteFlow {
+  to { stroke-dashoffset: -40; }
 }
 
-/* 3D Realistic Glossy Red Location Pin Standing Upright */
-.fleet-3d-pin-wrap {
+/* Full Area 3D Red Location Pin */
+.full-fleet-pin-wrap {
   position: absolute;
-  top: 32%;
-  left: 38%;
-  z-index: 10;
-  transform: rotateZ(-3deg) rotateY(14deg) rotateX(-24deg) translateY(-24px);
-  transform-style: preserve-3d;
+  top: 42%;
+  left: 36%;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -560,47 +516,106 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
   white-space: nowrap;
 }
 
-/* Floating Hub Chips on the Fleet Stage */
-.fleet-hub-chip {
-  position: absolute;
-  z-index: 6;
+/* Center Live Telemetry Pill */
+.full-fleet-telemetry-stage {
+  position: relative;
+  z-index: 2;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.telemetry-pill-group {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 12px;
+  gap: 14px;
+}
+
+.full-fleet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(2, 132, 199, 0.25);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(10px);
-  color: #082744;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+  border: 1px solid rgba(2, 132, 199, 0.28);
+  box-shadow: 
+    0 16px 36px -6px rgba(2, 132, 199, 0.25),
+    0 4px 12px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+  animation: telemetryFloat 4s ease-in-out infinite alternate;
 }
 
-.fleet-hub-chip.chip-top-right {
-  top: 14px;
-  right: 14px;
+@keyframes telemetryFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-6px); }
 }
 
-.fleet-hub-chip.chip-bottom-left {
-  bottom: 14px;
-  left: 14px;
-}
-
-.live-dot-pulse {
-  width: 7px;
-  height: 7px;
+.live-fleet-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  box-shadow: 0 0 12px #10b981;
   animation: beaconPulse 2s ease-in-out infinite;
 }
 
-.fleet-status-icon {
-  font-size: 12px;
+.fleet-badge-text strong {
+  display: block;
+  color: #082744;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.fleet-badge-text small {
+  display: block;
+  color: #0284c7;
+  font-size: 10.5px;
+  font-weight: 650;
+  margin-top: 1px;
+}
+
+/* Floating Glass Caption at Bottom */
+.fleet-glass-caption {
+  position: relative;
+  z-index: 2;
+  margin-top: 20px;
+  padding: 16px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 20px 45px -10px rgba(2, 132, 199, 0.16),
+    0 4px 12px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(14px);
+  max-width: 520px;
+}
+
+.fleet-glass-caption h2 {
+  margin: 0;
+  color: #082744;
+  font-size: clamp(26px, 2.6vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.fleet-glass-caption h2 em {
+  font-style: normal;
+  background: linear-gradient(120deg, #0284c7 0%, #0ea5e9 45%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.fleet-glass-caption p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 /* Floating 3D Fleet Status Capsule */

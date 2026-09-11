@@ -22,8 +22,49 @@ export default async function SignInPage() {
         <div className="travel-flight-ring ring-2" />
       </div>
 
-      {/* Left 3D Daylight Travel & Navigation Section */}
-      <section className="login-cinema-visual" aria-label="Chrysalis Mobility Operations">
+      {/* Left 3D Daylight Travel & Full-Area Fleet Section */}
+      <section className="login-cinema-visual visual-full-fleet-mode" aria-label="Chrysalis Mobility Operations">
+        {/* Full-Bleed 3D Isometric Mobility Fleet Background */}
+        <div className="visual-full-fleet-bg" aria-hidden="true">
+          <img 
+            src="/mobility-fleet-3d.jpg" 
+            alt="Chrysalis 3D Mobility Fleet" 
+            className="fleet-full-img"
+          />
+          <div className="fleet-full-tint" />
+          <div className="fleet-full-vignette" />
+
+          {/* Glowing Highway Route Flow Across the Full Fleet */}
+          <svg className="full-fleet-route-svg" viewBox="0 0 700 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="fullFleetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#0284c7" stopOpacity="0.95" />
+                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.95" />
+              </linearGradient>
+              <filter id="fullRouteGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            <path d="M 60,380 C 180,240 380,320 620,120" stroke="url(#fullFleetGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray="12 8" className="animated-full-route" filter="url(#fullRouteGlow)" />
+          </svg>
+
+          {/* 3D Realistic Glossy Red Location Pin Standing Upright */}
+          <div className="full-fleet-pin-wrap">
+            <div className="pin-ground-shadow" />
+            <div className="pin-ground-pulse" />
+            <div className="pin-3d-stem">
+              <div className="pin-head-3d">
+                <div className="pin-inner-hole" />
+                <div className="pin-specular-light" />
+              </div>
+              <div className="pin-needle-tip" />
+            </div>
+            <div className="pin-active-tag">Colombo HQ</div>
+          </div>
+        </div>
+
         <header className="cinema-brand">
           <div className="cinema-logo-capsule">
             <img src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change" />
@@ -35,85 +76,23 @@ export default async function SignInPage() {
           </div>
         </header>
 
-        {/* 3D Isometric Mobility Fleet Stage */}
-        <div className="travel-3d-stage">
-          <div className="travel-fleet-viewport">
-            <div className="isometric-fleet-card">
-              {/* 3D Isometric Vehicle Pattern Canvas */}
-              <div className="fleet-img-frame">
-                <img 
-                  src="/mobility-fleet-3d.jpg" 
-                  alt="Chrysalis 3D Isometric Mobility Fleet" 
-                  className="fleet-isometric-img"
-                />
-                <div className="fleet-surface-sheen" />
-                <div className="fleet-vignette-rim" />
-              </div>
-
-              {/* Glowing Route Vector Flow */}
-              <svg className="fleet-trace-svg" viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="fleetRouteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#0284c7" stopOpacity="0.9" />
-                    <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.95" />
-                  </linearGradient>
-                  <filter id="fleetGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
-                </defs>
-                <path d="M 40,200 C 120,130 220,180 360,70" stroke="url(#fleetRouteGrad)" strokeWidth="4.5" strokeLinecap="round" strokeDasharray="10 6" className="animated-fleet-trace" filter="url(#fleetGlow)" />
-              </svg>
-
-              {/* 3D Realistic Glossy Red Location Pin Standing Upright on the Fleet Map */}
-              <div className="fleet-3d-pin-wrap">
-                <div className="pin-ground-shadow" />
-                <div className="pin-ground-pulse" />
-                <div className="pin-3d-stem">
-                  <div className="pin-head-3d">
-                    <div className="pin-inner-hole" />
-                    <div className="pin-specular-light" />
-                  </div>
-                  <div className="pin-needle-tip" />
-                </div>
-                <div className="pin-active-tag">Colombo HQ</div>
-              </div>
-
-              {/* Waypoint Chips: Live Fleet Status */}
-              <div className="fleet-hub-chip chip-top-right">
-                <span className="live-dot-pulse" />
-                <span>Central Hub Dispatch</span>
-              </div>
-
-              <div className="fleet-hub-chip chip-bottom-left">
-                <span className="fleet-status-icon">🚗</span>
-                <span>Active Staff Transport</span>
-              </div>
-            </div>
-
-            {/* Floating 3D Fleet Status Capsule */}
-            <div className="travel-fleet-badge">
-              <div className="fleet-badge-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                  <circle cx="7" cy="17" r="2" />
-                  <path d="M9 17h6" />
-                  <circle cx="17" cy="17" r="2" />
-                </svg>
-              </div>
+        {/* Center Live Telemetry Pill Floating Over Fleet */}
+        <div className="full-fleet-telemetry-stage">
+          <div className="telemetry-pill-group">
+            <div className="full-fleet-badge">
+              <span className="live-fleet-dot" />
               <div className="fleet-badge-text">
                 <strong>Islandwide Mobility Fleet</strong>
-                <small>Real-time vehicle telemetry &amp; dispatch</small>
+                <small>18 Active Vehicles Dispatched • Real-time Telemetry</small>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Clean Punchy Headline (Minimal words) */}
-          <div className="travel-clean-caption">
-            <h2>Smart Mobility. <em>Every Journey.</em></h2>
-            <p>Intelligent staff transport &amp; islandwide fleet operations</p>
-          </div>
+        {/* Floating Minimalist Clean Caption */}
+        <div className="travel-clean-caption fleet-glass-caption">
+          <h2>Smart Mobility. <em>Every Journey.</em></h2>
+          <p>Intelligent staff transport &amp; islandwide fleet operations</p>
         </div>
       </section>
 
