@@ -35,65 +35,39 @@ export default async function SignInPage() {
           </div>
         </header>
 
-        {/* 3D Isometric Daylight Travel Map & Navigation Stage */}
+        {/* 3D Isometric Mobility Fleet Stage */}
         <div className="travel-3d-stage">
-          <div className="travel-map-viewport">
-            <div className="isometric-map-deck">
-              {/* Isometric Ground Layers */}
-              <div className="iso-map-base">
-                <div className="iso-grid-lines" />
-                <div className="iso-river-curve" />
-                <div className="iso-park-zone zone-1" />
-                <div className="iso-park-zone zone-2" />
+          <div className="travel-fleet-viewport">
+            <div className="isometric-fleet-card">
+              {/* 3D Isometric Vehicle Pattern Canvas */}
+              <div className="fleet-img-frame">
+                <img 
+                  src="/mobility-fleet-3d.jpg" 
+                  alt="Chrysalis 3D Isometric Mobility Fleet" 
+                  className="fleet-isometric-img"
+                />
+                <div className="fleet-surface-sheen" />
+                <div className="fleet-vignette-rim" />
               </div>
 
-              {/* 3D Isometric Buildings & Hub Landmarks */}
-              <div className="iso-buildings">
-                <div className="iso-building bldg-1" />
-                <div className="iso-building bldg-2" />
-                <div className="iso-building bldg-3" />
-                <div className="iso-building bldg-4" />
-                <div className="iso-building bldg-5" />
-              </div>
-
-              {/* Curving 3D Navigation Route Vector */}
-              <svg className="iso-route-svg" viewBox="0 0 360 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Glowing Route Vector Flow */}
+              <svg className="fleet-trace-svg" viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <linearGradient id="travelPathGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#0284c7" />
-                    <stop offset="50%" stopColor="#0ea5e9" />
-                    <stop offset="100%" stopColor="#f59e0b" />
+                  <linearGradient id="fleetRouteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0284c7" stopOpacity="0.9" />
+                    <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.95" />
                   </linearGradient>
-                  <filter id="routeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <filter id="fleetGlow" x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="3" result="blur" />
                     <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
                 </defs>
-                {/* Secondary transit links */}
-                <path d="M 80,240 C 130,220 180,250 250,190" stroke="rgba(2, 132, 199, 0.28)" strokeWidth="3" strokeDasharray="6 6" />
-                {/* Primary highway route */}
-                <path d="M 90,260 C 120,180 200,190 280,110" stroke="url(#travelPathGrad)" strokeWidth="4.5" strokeLinecap="round" strokeDasharray="8 6" className="animated-travel-path" filter="url(#routeGlow)" />
+                <path d="M 40,200 C 120,130 220,180 360,70" stroke="url(#fleetRouteGrad)" strokeWidth="4.5" strokeLinecap="round" strokeDasharray="10 6" className="animated-fleet-trace" filter="url(#fleetGlow)" />
               </svg>
 
-              {/* Hub Destination Waypoints */}
-              <div className="iso-waypoint hub-colombo">
-                <span className="hub-marker-ping" />
-                <span className="hub-marker-dot" />
-                <span className="hub-tag">Head Office</span>
-              </div>
-              <div className="iso-waypoint hub-kandy">
-                <span className="hub-marker-ping" />
-                <span className="hub-marker-dot" />
-                <span className="hub-tag">Central Hub</span>
-              </div>
-              <div className="iso-waypoint hub-galle">
-                <span className="hub-marker-ping" />
-                <span className="hub-marker-dot" />
-                <span className="hub-tag">Southern Hub</span>
-              </div>
-
-              {/* 3D Realistic Glossy Red Location Pin Standing Upright */}
-              <div className="iso-3d-pin-wrap">
+              {/* 3D Realistic Glossy Red Location Pin Standing Upright on the Fleet Map */}
+              <div className="fleet-3d-pin-wrap">
                 <div className="pin-ground-shadow" />
                 <div className="pin-ground-pulse" />
                 <div className="pin-3d-stem">
@@ -103,7 +77,18 @@ export default async function SignInPage() {
                   </div>
                   <div className="pin-needle-tip" />
                 </div>
-                <div className="pin-active-tag">Active Destination</div>
+                <div className="pin-active-tag">Colombo HQ</div>
+              </div>
+
+              {/* Waypoint Chips: Live Fleet Status */}
+              <div className="fleet-hub-chip chip-top-right">
+                <span className="live-dot-pulse" />
+                <span>Central Hub Dispatch</span>
+              </div>
+
+              <div className="fleet-hub-chip chip-bottom-left">
+                <span className="fleet-status-icon">🚗</span>
+                <span>Active Staff Transport</span>
               </div>
             </div>
 
