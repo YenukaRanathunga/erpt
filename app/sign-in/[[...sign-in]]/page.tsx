@@ -24,7 +24,7 @@ export default async function SignInPage() {
 
       {/* Left 3D Daylight Travel & Full-Area Fleet Section */}
       <section className="login-cinema-visual visual-full-fleet-mode" aria-label="Chrysalis Mobility Operations">
-        {/* Full-Bleed 3D Isometric Mobility Fleet Background */}
+        {/* Full-Bleed 3D Isometric Mobility Fleet Background with Live Simulation */}
         <div className="visual-full-fleet-bg" aria-hidden="true">
           <img 
             src="/mobility-fleet-3d.jpg" 
@@ -33,6 +33,122 @@ export default async function SignInPage() {
           />
           <div className="fleet-full-tint" />
           <div className="fleet-full-vignette" />
+
+          {/* Live Isometric Traffic & Pedestrian Simulation */}
+          <div className="live-city-simulation">
+            {/* Lane 1: Boulevard Traffic (South-Eastbound) */}
+            <div className="sim-vehicle veh-lane-1 veh-delay-0">
+              <div className="veh-shadow" />
+              <div className="veh-body van-cyan">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            <div className="sim-vehicle veh-lane-1 veh-delay-4">
+              <div className="veh-shadow" />
+              <div className="veh-body car-blue">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            <div className="sim-vehicle veh-lane-1 veh-delay-8">
+              <div className="veh-shadow" />
+              <div className="veh-body bus-white">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            {/* Lane 2: Boulevard Traffic (North-Westbound Return) */}
+            <div className="sim-vehicle veh-lane-2 veh-delay-2">
+              <div className="veh-shadow" />
+              <div className="veh-body car-silver">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            <div className="sim-vehicle veh-lane-2 veh-delay-6">
+              <div className="veh-shadow" />
+              <div className="veh-body van-blue">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            {/* Lane 3: Cross Avenue Traffic (South-Westbound) */}
+            <div className="sim-vehicle veh-lane-3 veh-delay-1">
+              <div className="veh-shadow" />
+              <div className="veh-body car-green">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            <div className="sim-vehicle veh-lane-3 veh-delay-7">
+              <div className="veh-shadow" />
+              <div className="veh-body van-cyan">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            {/* Lane 4: Cross Avenue Return (North-Eastbound) */}
+            <div className="sim-vehicle veh-lane-4 veh-delay-3">
+              <div className="veh-shadow" />
+              <div className="veh-body car-white">
+                <div className="veh-roof" />
+                <div className="veh-side" />
+                <div className="veh-front" />
+                <div className="veh-headlight" />
+              </div>
+            </div>
+
+            {/* Live Pedestrians / Commuters Walking Across Walkways */}
+            <div className="sim-pedestrian ped-walk-1 ped-delay-0">
+              <div className="ped-avatar ped-color-blue" />
+            </div>
+            <div className="sim-pedestrian ped-walk-1 ped-delay-3">
+              <div className="ped-avatar ped-color-amber" />
+            </div>
+
+            <div className="sim-pedestrian ped-walk-2 ped-delay-1">
+              <div className="ped-avatar ped-color-emerald" />
+            </div>
+            <div className="sim-pedestrian ped-walk-2 ped-delay-5">
+              <div className="ped-avatar ped-color-coral" />
+            </div>
+
+            <div className="sim-pedestrian ped-walk-3 ped-delay-2">
+              <div className="ped-avatar ped-color-purple" />
+            </div>
+
+            {/* Live Smart Intersection Telemetry Pulses */}
+            <div className="sim-smart-node node-pos-1">
+              <span className="node-ring" />
+              <span className="node-core" />
+            </div>
+            <div className="sim-smart-node node-pos-2">
+              <span className="node-ring" />
+              <span className="node-core" />
+            </div>
+          </div>
         </div>
 
         <header className="cinema-brand">

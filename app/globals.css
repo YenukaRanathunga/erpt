@@ -698,6 +698,368 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 }
 
 /* =========================================================
+   LIVE ISOMETRIC CITY SIMULATION (Traffic & Pedestrians)
+   ========================================================= */
+.live-city-simulation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* 3D Isometric Vehicle Base */
+.sim-vehicle {
+  position: absolute;
+  width: 36px;
+  height: 20px;
+  will-change: transform, opacity;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.35));
+}
+
+.veh-shadow {
+  position: absolute;
+  inset: 2px -4px -3px 2px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.35);
+  filter: blur(2.5px);
+}
+
+.veh-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 3px 6px rgba(15, 23, 42, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.veh-body.van-cyan {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.veh-body.car-blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.veh-body.bus-white {
+  width: 48px;
+  height: 22px;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+.veh-body.car-silver {
+  background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.veh-body.van-blue {
+  background: linear-gradient(135deg, #0369a1 0%, #0c4a6e 100%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.veh-body.car-green {
+  background: linear-gradient(135deg, #4ade80 0%, #15803d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.veh-body.car-white {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.veh-roof {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  right: 6px;
+  height: 42%;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 3px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.veh-headlight {
+  position: absolute;
+  bottom: 4px;
+  right: -16px;
+  width: 22px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.85) 0%, rgba(253, 224, 71, 0.35) 45%, transparent 80%);
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+/* Lane 1: Boulevard Traffic (South-Eastbound) */
+.veh-lane-1 {
+  top: 0;
+  left: 0;
+  animation: laneDriveSE 14s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes laneDriveSE {
+  0% {
+    transform: translate3d(-70px, 24vh, 0) rotate(28deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  92% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(62vw, 70vh, 0) rotate(28deg);
+    opacity: 0;
+  }
+}
+
+/* Lane 2: Boulevard Opposing Traffic (North-Westbound Return) */
+.veh-lane-2 {
+  top: 0;
+  left: 0;
+  animation: laneDriveNW 16s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes laneDriveNW {
+  0% {
+    transform: translate3d(62vw, 64vh, 0) rotate(208deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  92% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(-70px, 18vh, 0) rotate(208deg);
+    opacity: 0;
+  }
+}
+
+/* Lane 3: Cross Avenue Traffic (South-Westbound) */
+.veh-lane-3 {
+  top: 0;
+  left: 0;
+  animation: laneDriveSW 15s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes laneDriveSW {
+  0% {
+    transform: translate3d(58vw, 16vh, 0) rotate(152deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  92% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(-70px, 74vh, 0) rotate(152deg);
+    opacity: 0;
+  }
+}
+
+/* Lane 4: Cross Avenue Return (North-Eastbound) */
+.veh-lane-4 {
+  top: 0;
+  left: 0;
+  animation: laneDriveNE 13s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes laneDriveNE {
+  0% {
+    transform: translate3d(-70px, 80vh, 0) rotate(-28deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  92% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(58vw, 22vh, 0) rotate(-28deg);
+    opacity: 0;
+  }
+}
+
+/* Staggered Vehicle Delays */
+.veh-delay-0 { animation-delay: 0s; }
+.veh-delay-1 { animation-delay: 2.2s; }
+.veh-delay-2 { animation-delay: 4.4s; }
+.veh-delay-3 { animation-delay: 6.6s; }
+.veh-delay-4 { animation-delay: 8.8s; }
+.veh-delay-6 { animation-delay: 11s; }
+.veh-delay-7 { animation-delay: 13.2s; }
+.veh-delay-8 { animation-delay: 15.4s; }
+
+/* =========================================================
+   LIVE PEDESTRIANS / COMMUTERS (Tiny Walkers with Bobbing)
+   ========================================================= */
+.sim-pedestrian {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.ped-avatar {
+  width: 6px;
+  height: 10px;
+  border-radius: 3px;
+  box-shadow: 0 3px 5px rgba(15, 23, 42, 0.35);
+  animation: pedStep 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes pedStep {
+  from {
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    transform: translateY(-2.5px) scaleY(1.05);
+  }
+}
+
+.ped-color-blue { background: #0284c7; }
+.ped-color-amber { background: #d97706; }
+.ped-color-emerald { background: #059669; }
+.ped-color-coral { background: #e11d48; }
+.ped-color-purple { background: #7c3aed; }
+
+/* Walk Paths */
+.ped-walk-1 {
+  top: 45%;
+  left: 10%;
+  animation: pedCrossWalk1 26s linear infinite;
+}
+
+@keyframes pedCrossWalk1 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  92% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(22vw, 12vh, 0);
+    opacity: 0;
+  }
+}
+
+.ped-walk-2 {
+  top: 50%;
+  left: 32%;
+  animation: pedCrossWalk2 30s linear infinite;
+}
+
+@keyframes pedCrossWalk2 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  92% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-18vw, -8vh, 0);
+    opacity: 0;
+  }
+}
+
+.ped-walk-3 {
+  top: 38%;
+  left: 18%;
+  animation: pedCrossWalk3 24s linear infinite;
+}
+
+@keyframes pedCrossWalk3 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.85;
+  }
+  92% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(16vw, 10vh, 0);
+    opacity: 0;
+  }
+}
+
+.ped-delay-0 { animation-delay: 0s; }
+.ped-delay-1 { animation-delay: 3.5s; }
+.ped-delay-2 { animation-delay: 7s; }
+.ped-delay-3 { animation-delay: 10.5s; }
+.ped-delay-5 { animation-delay: 14s; }
+
+/* =========================================================
+   LIVE SMART INTERSECTION TELEMETRY NODES
+   ========================================================= */
+.sim-smart-node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.sim-smart-node.node-pos-1 {
+  top: 48%;
+  left: 32%;
+}
+
+.sim-smart-node.node-pos-2 {
+  top: 36%;
+  left: 44%;
+}
+
+.sim-smart-node .node-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid #0284c7;
+  animation: nodeRingPulse 2.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+@keyframes nodeRingPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.sim-smart-node .node-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0284c7;
+  box-shadow: 0 0 10px #0284c7, 0 0 18px rgba(2, 132, 199, 0.6);
+}
+
+/* =========================================================
    RIGHT FLOATING DAYLIGHT GLASSMORPHIC LOGIN PANEL
    ========================================================= */
 .login-cinema-panel {
