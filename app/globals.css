@@ -2521,3 +2521,9 @@ label.search > input::placeholder {
 }
 
 
+
+
+.sync-state.retrying {
+  color: #8a5a00;
+  background: #fff4ce;
+}

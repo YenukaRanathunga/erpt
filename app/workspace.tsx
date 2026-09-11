@@ -112,7 +112,7 @@ type UserRecord = {
 };
 type SharedState = { requests: RequestItem[]; users: UserRecord[]; offices: string[]; vehicles: VehicleRecord[]; conversations: DirectConversation[] };
 type Membership = { name: string; email: string; role: Role; displayRole?: Role; displayTitle?: string; office: string; empNo?: string };
-type SyncStatus = "connecting" | "synced" | "saving" | "offline";
+type SyncStatus = "connecting" | "synced" | "saving" | "retrying" | "offline";
 
 const roleConfig: Record<Role, {
   label: string;
@@ -1114,6 +1114,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const revisionRef = useRef(0);
   const applyingRemoteRef = useRef(false);
   const savingRef = useRef(false);
+  const connectionFailureStatus = (): SyncStatus => navigator.onLine ? "retrying" : "offline";
   const lastSavedStateRef = useRef("");
 
   useEffect(() => {
@@ -1127,6 +1128,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
 
   useEffect(() => {
     let active = true;
+    let retryTimer: number | undefined;
     const applyShared = (state: SharedState, membership: Membership, firstLoad = false) => {
       applyingRemoteRef.current = true;
       setRequests(state.requests.map(item => ({ ...item, office: officeForRequest(item), awaitingRole: item.awaitingRole ?? "project_manager" })));
@@ -1145,6 +1147,8 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
       try {
         const response = await fetch("/api/state", { cache: "no-store" });
         const data = await response.json() as { state?: SharedState | null; revision?: number; membership?: Membership; error?: string };
+        if (response.status === 401) { window.location.assign("/sign-in"); return; }
+        if (response.status === 403) { if (active) setAccessError(data.error ?? "Access has not been assigned."); return; }
         if (!response.ok) throw new Error(data.error ?? "Shared workspace unavailable");
         if (!active || !data.membership) return;
         if (data.state) {
@@ -1168,14 +1172,16 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
           revisionRef.current = result.revision ?? 0;
           applyShared(result.state, result.membership, true);
         }
+        setAccessError("");
         setSharedReady(true);
         setSyncStatus("synced");
       } catch (error) {
-        if (active) { setAccessError(error instanceof Error ? error.message : "Access unavailable"); setSyncStatus("offline"); }
+        console.error("[workspace sync] initial load failed", error);
+        if (active) { setSyncStatus(connectionFailureStatus()); retryTimer = window.setTimeout(() => void loadSharedState(), 3000); }
       }
     };
     void loadSharedState();
-    return () => { active = false; };
+    return () => { active = false; if (retryTimer) window.clearTimeout(retryTimer); };
   }, []);
 
   useEffect(() => {
@@ -1190,11 +1196,13 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
         setSyncStatus("saving");
         const response = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: serialized });
         const result = await response.json() as { state?: SharedState; revision?: number; membership?: Membership; error?: string };
+        if (response.status === 401) { window.location.assign("/sign-in"); return; }
+        if (response.status === 403) { setAccessError(result.error ?? "Access has not been assigned."); return; }
         if (!response.ok) throw new Error(result.error ?? "Sync failed");
         revisionRef.current = result.revision ?? revisionRef.current;
         lastSavedStateRef.current = serialized;
         setSyncStatus("synced");
-      } catch { setSyncStatus("offline"); }
+      } catch (error) { console.error("[workspace sync] save failed", error); setSyncStatus(connectionFailureStatus()); }
       finally { savingRef.current = false; }
     }, 600);
     return () => window.clearTimeout(timer);
@@ -1207,7 +1215,9 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
       if (savingRef.current) return;
       try {
         const response = await fetch("/api/state", { cache: "no-store" });
-        const data = await response.json() as { state?: SharedState | null; revision?: number; membership?: Membership };
+        const data = await response.json() as { state?: SharedState | null; revision?: number; membership?: Membership; error?: string };
+        if (response.status === 401) { window.location.assign("/sign-in"); return; }
+        if (response.status === 403) { setAccessError(data.error ?? "Access has not been assigned."); return; }
         if (!response.ok || !data.state || !data.membership) throw new Error("Sync unavailable");
         pollFailures = 0;
         if ((data.revision ?? 0) > revisionRef.current) {
@@ -1231,16 +1241,24 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
           setAdminOffice(data.membership.office);
         }
         setSyncStatus("synced");
-      } catch {
+      } catch (error) {
+        console.error("[workspace sync] refresh failed", error);
         pollFailures++;
         if (pollFailures >= 3) {
-          setSyncStatus("offline");
+          setSyncStatus(connectionFailureStatus());
         }
       }
     }, 5000);
     return () => window.clearInterval(poll);
   }, [sharedReady]);
 
+  useEffect(() => {
+    const markOffline = () => setSyncStatus("offline");
+    const reconnect = () => setSyncStatus(status => status === "offline" ? "connecting" : status);
+    window.addEventListener("offline", markOffline);
+    window.addEventListener("online", reconnect);
+    return () => { window.removeEventListener("offline", markOffline); window.removeEventListener("online", reconnect); };
+  }, []);
   useEffect(() => { window.localStorage.setItem("chrysalis-read-notifications", JSON.stringify(readNotificationIds)); }, [readNotificationIds]);
   useEffect(() => {
     if (!role || !("Notification" in window) || Notification.permission !== "granted") return;
@@ -1343,7 +1361,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const content = view === "dashboard" ? <Dashboard requests={visibleRequests} onNew={() => navigate("request")} onNavigate={navigate} /> : view === "calendar" ? <TripCalendar requests={role === "admin" ? visibleRequests : requests} currentUser={account.name} approvedOnly={approvedCalendarOnly} onNew={()=>navigate("request")} onCancelRequest={updateRequest}/> : view === "request" ? <RequestForm requester={account.name} requesterRole={visibleRole} requesterOffice={accountOffice} requesterDetails={currentStaff} approvers={approvers} offices={offices} onCreate={createRequest}/> : view === "approvals" ? <Approvals requests={requests} role={role} accountName={account.name} accountOffice={accountOffice} onStatus={updateStatus}/> : view === "trips" ? <TripPlanning requests={visibleRequests} vehicles={visibleVehicles} adminName={account.name} onUpdateRequest={updateRequest} onUpdateVehicle={updateVehicle}/> : view === "vehicles" ? <VehicleManagement vehicles={visibleVehicles} office={accountOffice} offices={offices} canViewAll={canViewAllOffices} onAdd={addVehicle} onUpdate={updateVehicle}/> : view === "reports" && canAccessReports ? <Reports requests={role === "admin" ? visibleRequests : requests} office={accountOffice} offices={offices} canViewAll={canViewAllOffices}/> : view === "settings" && role === "super_admin" ? <RootSettings users={users} requests={requests} vehicles={vehicles} offices={offices} onAddUser={addUser} onAddOffice={addOffice} onRemoveOffice={removeOffice} onUpdateUser={updateUser} onUpdateRequest={updateRequest}/> : <Dashboard requests={visibleRequests} onNew={() => navigate("request")} onNavigate={navigate} />;
 
   return <>
-    <div className={`app-shell ${theme === "dark" ? "theme-dark" : ""}`}><aside className={`sidebar ${sidebarOpen?"open":""}`}><div className="brand"><img className="official-logo" src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change"/></div><div className="role-badge"><span>{account.initials}</span><div><small>SIGNED IN AS</small><strong>{account.label}</strong>{role === "admin" && <small>{accountOffice}</small>}{role === "super_admin" && <small>ALL OFFICES · ROOT ACCESS</small>}</div></div><nav aria-label="Primary navigation">{allowedNav.map(item=><button key={item.id} className={view===item.id?"active":""} onClick={()=>navigate(item.id)}><span>{item.short}</span>{item.label}{item.id==="approvals"&&<b>{notificationItems.length}</b>}</button>)}</nav><div className="sidebar-bottom"><button className="support-card" onClick={()=>setHelpOpen(true)}><span>?</span><strong>Need help?</strong><p>Read the operations guide</p></button><button className="main-login-button" onClick={logout}><span>←</span><strong>Main login</strong><small>Exit workspace & switch account</small></button><button className="profile" onClick={logout} title="Sign out"><span className="avatar pink">{account.initials}</span><span><strong>{account.name}</strong><small>{account.label} · Sign out</small></span><i>↗</i></button></div></aside>{sidebarOpen&&<button className="overlay" aria-label="Close menu" onClick={()=>setSidebarOpen(false)}/>}<main><header className="topbar"><button className="mobile-menu" onClick={()=>setSidebarOpen(true)}>☰</button><p><span>Mobility Operations</span><b>/</b>{activeLabel}</p><div className="top-actions"><span className={`sync-state ${syncStatus}`} title="Shared workspace status"><i />{syncStatus === "synced" ? "Shared" : syncStatus === "saving" ? "Saving" : syncStatus === "connecting" ? "Connecting" : "Offline"}</span><span className="header-role">{account.label}{role === "admin" ? ` · ${accountOffice}` : ""}</span><button type="button" className="theme-toggle-button" onClick={toggleTheme} title={theme === "dark" ? "Switch to Light theme" : "Switch to Dark theme"} aria-label="Toggle theme"><span className="theme-toggle-icon">{theme === "dark" ? "☀️" : "🌙"}</span><span className="theme-toggle-text">{theme === "dark" ? "Light theme" : "Dark theme"}</span></button><button aria-label="Search" onClick={()=>{setSearchOpen(true);setNotificationsOpen(false)}}>⌕</button><button aria-label={`${unreadNotifications.length} unread notifications`} className="notification" onClick={()=>{setNotificationsOpen(value=>!value);setSearchOpen(false)}}>♧{unreadNotifications.length>0&&<b>{unreadNotifications.length>9?"9+":unreadNotifications.length}</b>}</button><span className="top-date">14 AUG 2026</span></div></header><div className="content">{content}</div></main></div>
+    <div className={`app-shell ${theme === "dark" ? "theme-dark" : ""}`}><aside className={`sidebar ${sidebarOpen?"open":""}`}><div className="brand"><img className="official-logo" src="/chrysalis-official.png" alt="Chrysalis — Catalyzing change"/></div><div className="role-badge"><span>{account.initials}</span><div><small>SIGNED IN AS</small><strong>{account.label}</strong>{role === "admin" && <small>{accountOffice}</small>}{role === "super_admin" && <small>ALL OFFICES · ROOT ACCESS</small>}</div></div><nav aria-label="Primary navigation">{allowedNav.map(item=><button key={item.id} className={view===item.id?"active":""} onClick={()=>navigate(item.id)}><span>{item.short}</span>{item.label}{item.id==="approvals"&&<b>{notificationItems.length}</b>}</button>)}</nav><div className="sidebar-bottom"><button className="support-card" onClick={()=>setHelpOpen(true)}><span>?</span><strong>Need help?</strong><p>Read the operations guide</p></button><button className="main-login-button" onClick={logout}><span>←</span><strong>Main login</strong><small>Exit workspace & switch account</small></button><button className="profile" onClick={logout} title="Sign out"><span className="avatar pink">{account.initials}</span><span><strong>{account.name}</strong><small>{account.label} · Sign out</small></span><i>↗</i></button></div></aside>{sidebarOpen&&<button className="overlay" aria-label="Close menu" onClick={()=>setSidebarOpen(false)}/>}<main><header className="topbar"><button className="mobile-menu" onClick={()=>setSidebarOpen(true)}>☰</button><p><span>Mobility Operations</span><b>/</b>{activeLabel}</p><div className="top-actions"><span className={`sync-state ${syncStatus}`} title={syncStatus === "offline" ? "No internet connection" : syncStatus === "retrying" ? "Reconnecting to the shared workspace" : "Shared workspace status"}><i />{syncStatus === "synced" ? "Shared" : syncStatus === "saving" ? "Saving" : syncStatus === "retrying" ? "Reconnecting" : syncStatus === "connecting" ? "Connecting" : "Offline"}</span><span className="header-role">{account.label}{role === "admin" ? ` · ${accountOffice}` : ""}</span><button type="button" className="theme-toggle-button" onClick={toggleTheme} title={theme === "dark" ? "Switch to Light theme" : "Switch to Dark theme"} aria-label="Toggle theme"><span className="theme-toggle-icon">{theme === "dark" ? "☀️" : "🌙"}</span><span className="theme-toggle-text">{theme === "dark" ? "Light theme" : "Dark theme"}</span></button><button aria-label="Search" onClick={()=>{setSearchOpen(true);setNotificationsOpen(false)}}>⌕</button><button aria-label={`${unreadNotifications.length} unread notifications`} className="notification" onClick={()=>{setNotificationsOpen(value=>!value);setSearchOpen(false)}}>♧{unreadNotifications.length>0&&<b>{unreadNotifications.length>9?"9+":unreadNotifications.length}</b>}</button><span className="top-date">14 AUG 2026</span></div></header><div className="content">{content}</div></main></div>
     {searchOpen && <div className="utility-backdrop"><section className="utility-dialog" role="dialog" aria-modal="true" aria-label="Search workspace"><header><h2>Search workspace</h2><button aria-label="Close search" onClick={()=>setSearchOpen(false)}>×</button></header><input placeholder="Search sections or requests" value={searchQuery} onChange={event=>setSearchQuery(event.target.value)}/><div className="utility-results">{allowedNav.filter(item=>item.label.toLowerCase().includes(searchQuery.toLowerCase())).map(item=><button key={item.id} onClick={()=>navigate(item.id)}><span>{item.short}</span><p><strong>{item.label}</strong><small>Open workspace section</small></p><b>→</b></button>)}{requests.filter(item=>`${item.id} ${item.person} ${item.route}`.toLowerCase().includes(searchQuery.toLowerCase())).slice(0,5).map(item=><button key={item.id} onClick={()=>{navigate(account.views.includes("approvals")?"approvals":"calendar");announce(`${item.id} selected.`)}}><span>VR</span><p><strong>{item.id} · {item.route}</strong><small>{item.person} · {item.status}</small></p><b>→</b></button>)}</div></section></div>}
     {notificationsOpen && <aside className="notification-panel"><header><div><h2>Notifications</h2><small>{unreadNotifications.length} unread · {account.label}</small></div><div>{unreadNotifications.length>0&&<button className="mark-read" onClick={markAllNotificationsRead}>Read all</button>}<button aria-label="Close notifications" onClick={()=>setNotificationsOpen(false)}>×</button></div></header>{desktopAlertPermission!=="granted"&&<section className="desktop-alert-card"><span>↗</span><div><strong>Desktop alerts</strong><p>{desktopAlertPermission==="denied"?"Blocked in browser settings. Allow notifications to receive alerts.":desktopAlertPermission==="unsupported"?"This browser does not support desktop alerts.":"Get approval and trip alerts while this site is open."}</p></div>{desktopAlertPermission!=="denied"&&desktopAlertPermission!=="unsupported"&&<button onClick={enableDesktopAlerts}>Enable</button>}</section>}<div className="notification-list">{notificationItems.length?notificationItems.map(item=><button className={readNotificationIds.includes(item.id)?"read":"unread"} key={item.id} onClick={()=>openNotification(item)}><span className={`notice-icon ${item.tone}`}>{item.tone==="amber"?"!":item.tone==="red"?"↺":"✓"}</span><p><strong>{item.title}</strong><small>{item.detail}</small></p>{!readNotificationIds.includes(item.id)&&<i/>}</button>):<div className="notification-empty"><span>✓</span><strong>You’re all caught up</strong><p>New approvals and trip updates will appear here.</p></div>}</div><footer>In-app notifications are active. Official email addresses are required before email delivery can be connected.</footer></aside>}
     {notice && <div className="app-toast" role="status"><span>✓</span>{notice}<button aria-label="Dismiss message" onClick={()=>setNotice("")}>×</button></div>}
