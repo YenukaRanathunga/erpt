@@ -33,36 +33,6 @@ export default async function SignInPage() {
           />
           <div className="fleet-full-tint" />
           <div className="fleet-full-vignette" />
-
-          {/* Glowing Highway Route Flow Across the Full Fleet */}
-          <svg className="full-fleet-route-svg" viewBox="0 0 700 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="fullFleetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#0284c7" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.95" />
-              </linearGradient>
-              <filter id="fullRouteGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <path d="M 60,380 C 180,240 380,320 620,120" stroke="url(#fullFleetGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray="12 8" className="animated-full-route" filter="url(#fullRouteGlow)" />
-          </svg>
-
-          {/* 3D Realistic Glossy Red Location Pin Standing Upright */}
-          <div className="full-fleet-pin-wrap">
-            <div className="pin-ground-shadow" />
-            <div className="pin-ground-pulse" />
-            <div className="pin-3d-stem">
-              <div className="pin-head-3d">
-                <div className="pin-inner-hole" />
-                <div className="pin-specular-light" />
-              </div>
-              <div className="pin-needle-tip" />
-            </div>
-            <div className="pin-active-tag">Colombo HQ</div>
-          </div>
         </div>
 
         <header className="cinema-brand">
@@ -75,19 +45,6 @@ export default async function SignInPage() {
             </div>
           </div>
         </header>
-
-        {/* Center Live Telemetry Pill Floating Over Fleet */}
-        <div className="full-fleet-telemetry-stage">
-          <div className="telemetry-pill-group">
-            <div className="full-fleet-badge">
-              <span className="live-fleet-dot" />
-              <div className="fleet-badge-text">
-                <strong>Islandwide Mobility Fleet</strong>
-                <small>18 Active Vehicles Dispatched • Real-time Telemetry</small>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Floating Minimalist Clean Caption */}
         <div className="travel-clean-caption fleet-glass-caption">
