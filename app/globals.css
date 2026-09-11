@@ -698,17 +698,13 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 }
 
 /* =========================================================
-   FULL-PAGE 3D ISOMETRIC MOBILITY CANVAS
+   FULL-PAGE 3D ISOMETRIC MOBILITY CANVAS & BALANCED LAYOUT
    ========================================================= */
 .login-cinema-fullscreen {
   position: relative;
   width: 100vw;
   min-height: 100vh;
   overflow-x: hidden;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 44px 7vw;
   box-sizing: border-box;
 }
 
@@ -734,116 +730,80 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
 
 @keyframes citySlowPan {
   0% { transform: scale(1.02) translate(0, 0); }
-  100% { transform: scale(1.07) translate(-15px, -8px); }
+  100% { transform: scale(1.06) translate(-12px, -6px); }
 }
 
-/* Atmospheric Sunlit Overlay & Edge Gradients */
+/* Clean Daylight Tint - Pure & Natural with zero white blob */
 .fullscreen-city-overlay {
   position: absolute;
   inset: 0;
-  background: 
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(240, 249, 255, 0.18) 45%, rgba(240, 249, 255, 0.65) 100%),
-    radial-gradient(circle at 82% 48%, rgba(255, 255, 255, 0.88) 0%, rgba(240, 249, 255, 0.45) 45%, transparent 75%);
+  background: rgba(15, 23, 42, 0.05);
   pointer-events: none;
 }
 
-.fullscreen-city-vignette {
-  position: absolute;
-  inset: 0;
-  box-shadow: 
-    inset 0 0 100px rgba(2, 132, 199, 0.12),
-    inset -80px 0 120px rgba(255, 255, 255, 0.6);
-  pointer-events: none;
-}
-
-/* Fixed Top-Left Chrysalis Brand Capsule */
-.cinema-brand-fixed {
-  position: fixed;
-  top: 36px;
-  left: 5vw;
-  z-index: 20;
-}
-
-/* Fixed Bottom-Left Minimalist Frosted Caption */
-.cinema-caption-fixed {
-  position: fixed;
-  bottom: 36px;
-  left: 5vw;
-  z-index: 20;
-  max-width: 500px;
-}
-
-/* Right Dock for Floating Glassmorphic Login Card */
-.cinema-login-dock {
+/* Two-Column Balanced Floating Layout */
+.fullscreen-cinema-layout {
   position: relative;
-  z-index: 20;
-  width: min(470px, 100%);
-  margin-left: auto;
-}
-
-/* Responsive Handling */
-@media (max-width: 1024px) {
-  .cinema-caption-fixed {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .login-cinema-fullscreen {
-    justify-content: center;
-    padding: 100px 20px 40px;
-    min-height: 100vh;
-  }
-  .cinema-brand-fixed {
-    top: 20px;
-    left: 20px;
-  }
-  .cinema-login-dock {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-/* =========================================================
-   RIGHT FLOATING DAYLIGHT GLASSMORPHIC LOGIN PANEL
-   ========================================================= */
-.login-cinema-panel {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
+  z-index: 10;
+  width: 100%;
+  max-width: 1440px;
   min-height: 100vh;
-  padding: 40px 24px;
-  background: radial-gradient(circle at 60% 35%, rgba(255, 255, 255, 0.4) 0%, transparent 80%);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 48px 64px;
+  box-sizing: border-box;
 }
 
+/* Left Column: Brand Capsule Top & Tagline Bottom */
+.cinema-left-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: calc(100vh - 120px);
+  max-height: 680px;
+  max-width: 500px;
+  pointer-events: auto;
+}
+
+/* Right Column: Floating Login Dock */
+.cinema-right-column {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Daylight Floating Glassmorphic Login Card */
 .login-cinema-card {
   position: relative;
-  width: min(480px, 100%);
-  padding: 42px 42px 38px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.95);
+  width: 440px;
+  max-width: 100%;
+  padding: 38px 40px 32px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 
-    0 35px 80px -15px rgba(2, 132, 199, 0.18),
-    0 10px 30px -5px rgba(15, 23, 42, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
-  backdrop-filter: blur(28px) saturate(180%);
+    0 30px 70px -10px rgba(15, 23, 42, 0.28),
+    0 10px 25px -5px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  backdrop-filter: blur(24px) saturate(180%);
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .login-cinema-card:hover {
   transform: translateY(-3px) scale(1.005);
   box-shadow: 
-    0 45px 95px -15px rgba(2, 132, 199, 0.24),
-    0 14px 36px -5px rgba(15, 23, 42, 0.1);
+    0 40px 85px -10px rgba(15, 23, 42, 0.32),
+    0 14px 32px -5px rgba(15, 23, 42, 0.15);
 }
 
 .cinema-card-sheen {
   position: absolute;
   inset: 0;
-  border-radius: 28px;
+  border-radius: 26px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.2) 100%);
   pointer-events: none;
 }
@@ -857,6 +817,50 @@ input,select,textarea{border-color:#b8b8b8;border-radius:4px}input:focus,select:
   background: radial-gradient(circle, rgba(14, 165, 233, 0.15), transparent 70%);
   pointer-events: none;
   border-radius: 50%;
+}
+
+/* Responsive Rules */
+@media (max-width: 1080px) {
+  .fullscreen-cinema-layout {
+    padding: 36px 32px;
+  }
+  .cinema-left-column {
+    max-width: 420px;
+  }
+  .login-cinema-card {
+    width: 410px;
+    padding: 32px 30px;
+  }
+}
+
+@media (max-width: 860px) {
+  .fullscreen-cinema-layout {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 28px;
+    padding: 32px 18px;
+    min-height: 100vh;
+  }
+  .cinema-left-column {
+    height: auto;
+    max-width: 100%;
+    align-items: center;
+    gap: 16px;
+  }
+  .fleet-glass-caption {
+    display: none;
+  }
+  .cinema-right-column {
+    width: 100%;
+    justify-content: center;
+  }
+  .login-cinema-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 32px 24px;
+    border-radius: 22px;
+  }
 }
 
 .cinema-card-head {
