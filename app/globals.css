@@ -3673,3 +3673,25 @@ label.search > input::placeholder {
   color: #8a5a00;
   background: #fff4ce;
 }
+/* Keep the passenger remove control obvious, including for the primary requester. */
+.passenger-row > .remove {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #efb4b4;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #b42318;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.passenger-row > .remove:hover {
+  border-color: #d92d20;
+  background: #fee4e2;
+  color: #912018;
+}
