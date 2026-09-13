@@ -1,12 +1,13 @@
 import type { StaffMember } from "./staff-data";
 
-export type StaffApprovalRole = "user" | "project_manager" | "project_director" | "ceo";
+export type StaffApprovalRole = "user" | "project_manager" | "project_director" | "ceo" | "ceo_assistant";
 
 // Official positions stay unchanged; this map controls approval authority only.
 const CEO_EMPLOYEE_NUMBERS = new Set(["1", "3", "20"]);
 const PROJECT_DIRECTOR_EMPLOYEE_NUMBERS = new Set(["59"]);
 
 export function approvalAccessForStaff(staff: StaffMember): StaffApprovalRole {
+  if (staff.empNo === "131") return "ceo_assistant";
   if (CEO_EMPLOYEE_NUMBERS.has(staff.empNo)) return "ceo";
   if (PROJECT_DIRECTOR_EMPLOYEE_NUMBERS.has(staff.empNo)) return "project_director";
 
@@ -32,6 +33,7 @@ export function displayRoleForStaff(staff: StaffMember): StaffApprovalRole {
 }
 
 export function displayTitleForStaff(staff: StaffMember): string | undefined {
+  if (staff.empNo === "131") return "Executive Coordinator";
   if (staff.empNo === "20") return "Project Director";
   if (staff.empNo === "59") return "Project Manager";
   return undefined;

@@ -25,6 +25,19 @@ type SharedState = { requests: Item[]; users: User[]; offices: string[]; vehicle
 type Membership = { name: string; email: string; role: Role; displayRole?: Role; displayTitle?: string; office: string; empNo?: string };
 type SqlClient = ReturnType<typeof getSql>;
 const APPROVAL_ROLES = new Set<Role>(["project_manager", "project_director", "ceo", "head_operations"]);
+const EXECUTIVE_COORDINATOR_EMPLOYEE_NUMBER = "131";
+const EXECUTIVE_ASSIGNMENT_FIELDS = ["tone","tripId","vehicle","vehicleCompany","vehicleType","dispatchedAt","adminNotes"] as const;
+
+const isExecutiveCoordinator = (member: Pick<Membership,"role" | "empNo">) => member.role === "ceo_assistant" && member.empNo === EXECUTIVE_COORDINATOR_EMPLOYEE_NUMBER;
+const isExecutiveBudgetRequest = (item: Item) => String(item.budget ?? "").trim().toUpperCase().startsWith("CHR");
+
+function mergeExecutiveAssignment(current: Item, incoming: Item, member: Membership): Item | null {
+  if (!isExecutiveCoordinator(member) || !isExecutiveBudgetRequest(current) || current.status !== "Approved" || incoming.status !== "Trip scheduled") return null;
+  const update: Item = { ...current };
+  for (const field of EXECUTIVE_ASSIGNMENT_FIELDS) update[field] = incoming[field];
+  update.status = "Trip scheduled";
+  return update;
+}
 
 function canApproveRequest(item: Item, member: Pick<Membership, "name" | "role" | "office">): boolean {
   if (!APPROVAL_ROLES.has(member.role)) return false;
@@ -265,12 +278,14 @@ function visibleState(state: SharedState, member: Membership): SharedState {
   const operational = (status: string) => ["Approved", "Trip scheduled", "Completed"].includes(status);
   const visibleRequests = member.role === "admin"
     ? state.requests.filter(officeMatches)
+    : isExecutiveCoordinator(member)
+      ? state.requests.filter(item => item.person === member.name || (isExecutiveBudgetRequest(item) && operational(item.status ?? "")))
     : member.role === "user"
       ? state.requests.filter(item => item.person === member.name || operational(item.status ?? ""))
       : state.requests.filter(item => item.person === member.name || canApproveRequest(item,member) || operational(item.status ?? ""));
   const requests = withoutDuplicateRequests(visibleRequests);
   const users = state.users.filter(item=>item.active).map(({authEmail: _authEmail,...user})=>user);
-  const vehicles = member.role === "admin" ? state.vehicles.filter(officeMatches) : [];
+  const vehicles = member.role === "admin" ? state.vehicles.filter(officeMatches) : isExecutiveCoordinator(member) ? state.vehicles : [];
   const conversations = state.conversations.filter(item=>item.participants.includes(member.name));
   return { requests, users, offices: state.offices, vehicles, conversations };
 }
@@ -287,6 +302,8 @@ function mergeAuthorized(current: SharedState, incoming: SharedState, member: Me
     const passengerNames = Array.isArray(item.passengers) ? item.passengers.filter(name=>typeof name === "string") : [];
     const canMessage = item.person === member.name || passengerNames.includes(member.name) || canApproveRequest(item,member);
     const withMessages = appendAuthorizedMessages(item,next,member,Boolean(canMessage));
+    const executiveAssignment = mergeExecutiveAssignment(withMessages,next,member);
+    if (executiveAssignment) return executiveAssignment;
     if (item.person === member.name && next.status === "Cancelled" && !item.dispatchedAt && !["Trip scheduled", "Completed", "Cancelled"].includes(item.status ?? "")) {
       return { ...withMessages, status: "Cancelled", tone: "red", cancelledAt: next.cancelledAt, cancelledBy: member.name, cancellationReason: next.cancellationReason };
     }
