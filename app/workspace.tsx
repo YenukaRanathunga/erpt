@@ -1515,13 +1515,13 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const visibleRole = previewRole ?? displayRole ?? role;
   const displayAccount = roleConfig[visibleRole];
   const signedInDirectoryUser = users.find(user => 
+    (user.authEmail && user.authEmail.toLowerCase() === viewerEmail.toLowerCase()) ||
     (currentMembership && (user.name === currentMembership.name || (user.empNo && user.empNo === currentMembership.empNo))) ||
-    user.name === viewerName || 
-    (user.authEmail && user.authEmail.toLowerCase() === viewerEmail.toLowerCase())
+    user.name === viewerName
   );
   const realName = previewRole 
     ? featurePreviewNames[previewRole] 
-    : currentMembership?.name || currentStaff?.name || signedInDirectoryUser?.name || (viewerName && !viewerName.includes("@") ? viewerName : "") || baseAccount.name;
+    : currentMembership?.name || currentStaff?.name || signedInDirectoryUser?.name || (viewerName && !viewerName.includes("@") ? viewerName : "User");
   const realEmail = previewRole 
     ? "Sandbox test account" 
     : currentMembership?.email || (currentStaff?.empNo ? `EMP No: ${currentStaff.empNo}` : signedInDirectoryUser?.authEmail ?? signedInDirectoryUser?.email ?? viewerEmail);
