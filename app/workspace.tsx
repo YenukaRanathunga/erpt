@@ -1240,6 +1240,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const [conversations,setConversations] = useState<DirectConversation[]>([]);
   const [adminOffice, setAdminOffice] = useState("Head Office");
   const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(null);
+  const [currentMembership, setCurrentMembership] = useState<Membership | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [searchOpen,setSearchOpen] = useState(false);
   const [notificationsOpen,setNotificationsOpen] = useState(false);
@@ -1280,6 +1281,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
       setDisplayTitle(membership.displayTitle);
       setAdminOffice(membership.office);
       setCurrentStaff(staffMembers.find(member => member.empNo === membership.empNo || member.name === membership.name) ?? null);
+      setCurrentMembership(membership);
       if (firstLoad) setView(roleConfig[membership.role].startView);
     };
     const loadSharedState = async () => {
@@ -1378,6 +1380,8 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
           setDisplayRole(data.membership.displayRole ?? data.membership.role);
           setDisplayTitle(data.membership.displayTitle);
           setAdminOffice(data.membership.office);
+          setCurrentMembership(data.membership);
+          setCurrentStaff(staffMembers.find(member => member.empNo === data.membership?.empNo || member.name === data.membership?.name) ?? null);
         }
         setSyncStatus("synced");
       } catch (error) {
@@ -1510,10 +1514,31 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const baseAccount = roleConfig[activeRole];
   const visibleRole = previewRole ?? displayRole ?? role;
   const displayAccount = roleConfig[visibleRole];
-  const activeAdmin = !previewRole && activeRole === "admin" ? adminAccounts.find(admin => admin.office === adminOffice) : undefined;
-  const signedInDirectoryUser = users.find(user => user.name === viewerName || (user.authEmail ?? "").toLowerCase() === viewerEmail.toLowerCase());
-  const accountBase = { ...baseAccount, label: previewRole ? displayAccount.label : displayTitle ?? displayAccount.label };
-  const account = previewRole ? { ...accountBase, name:featurePreviewNames[previewRole], email:"Sandbox test account", initials:featurePreviewNames[previewRole].split(" ").map(part=>part[0]).slice(0,2).join("") } : role === "user" && currentStaff ? { ...accountBase, name: currentStaff.name, email: `EMP No: ${currentStaff.empNo}`, initials: currentStaff.name.split(" ").map(part => part[0]).slice(0,2).join("") } : signedInDirectoryUser ? { ...accountBase, name: signedInDirectoryUser.name, email: signedInDirectoryUser.authEmail ?? signedInDirectoryUser.email, initials: signedInDirectoryUser.name.split(" ").map(part => part[0]).slice(0,2).join("") } : activeAdmin ? { ...accountBase, name: activeAdmin.name, email: activeAdmin.email, initials: activeAdmin.name.split(" ").map(part => part[0]).slice(0,2).join("") } : accountBase;
+  const signedInDirectoryUser = users.find(user => 
+    (currentMembership && (user.name === currentMembership.name || (user.empNo && user.empNo === currentMembership.empNo))) ||
+    user.name === viewerName || 
+    (user.authEmail && user.authEmail.toLowerCase() === viewerEmail.toLowerCase())
+  );
+  const realName = previewRole 
+    ? featurePreviewNames[previewRole] 
+    : currentMembership?.name || currentStaff?.name || signedInDirectoryUser?.name || (viewerName && !viewerName.includes("@") ? viewerName : "") || baseAccount.name;
+  const realEmail = previewRole 
+    ? "Sandbox test account" 
+    : currentMembership?.email || (currentStaff?.empNo ? `EMP No: ${currentStaff.empNo}` : signedInDirectoryUser?.authEmail ?? signedInDirectoryUser?.email ?? viewerEmail);
+  const realInitials = (realName || "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join("")
+    .toUpperCase();
+  const account = {
+    ...baseAccount,
+    label: previewRole ? displayAccount.label : displayTitle ?? displayAccount.label,
+    name: realName,
+    email: realEmail,
+    initials: realInitials,
+  };
   const mutateActiveRequests = (updater: (items: RequestItem[]) => RequestItem[]) => { if (previewRole) setSandboxRequests(updater); else setRequests(updater); };
   const updateActiveRequest = (id: string, patch: Partial<RequestItem>) => mutateActiveRequests(items=>items.map(item=>item.id===id?{...item,...patch}:item));
   const createActiveRequest = (request: RequestItem) => mutateActiveRequests(items=>[request,...items]);
@@ -1522,7 +1547,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const updateActiveVehicle = (id: string, patch: Partial<VehicleRecord>) => { if (!previewRole) { updateVehicle(id,patch); return; } const current=activeVehicles.find(item=>item.id===id); if(!current)return; const updated={...current,...patch}; const oldLabel=vehicleLabel(current); const newLabel=vehicleLabel(updated); setSandboxVehicles(items=>items.map(item=>item.id===id?updated:item)); if(oldLabel!==newLabel)setSandboxRequests(items=>items.map(item=>item.vehicle===oldLabel?{...item,vehicle:newLabel}:item)); };
   const allowedNav = navItems.filter(item => account.views.includes(item.id));
   const approvers = previewRole ? featurePreviewApprovers : users.filter(user => user.active && (["project_manager", "project_director", "ceo", "head_operations"] as Role[]).includes(user.role));
-  const accountOffice = previewRole ? previewOffice : role === "admin" ? (signedInDirectoryUser?.office ?? adminOffice) : role === "user" && currentStaff ? currentStaff.office : signedInDirectoryUser?.office ?? "Head Office";
+  const accountOffice = previewRole ? previewOffice : currentMembership?.office || currentStaff?.office || signedInDirectoryUser?.office || adminOffice || "Head Office";
   const canAccessReports = activeRole === "admin" || activeRole === "super_admin" || activeRole === "ceo_assistant";
   const canViewAllOffices = activeRole === "super_admin" || (activeRole === "admin" && isHeadOffice(accountOffice));
   const visibleRequests = activeRole === "ceo_assistant" ? activeRequests.filter(item => item.person === account.name || isExecutiveCoordinatorRequest(item)) : activeRole === "admin" && !canViewAllOffices ? activeRequests.filter(item => officeForRequest(item) === accountOffice) : activeRequests;

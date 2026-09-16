@@ -316,7 +316,7 @@ function membershipFor(email: string, state: SharedState | null): Membership | n
     const tokens = localPart.split(/[._-]+/).filter(token => token.length >= 3);
     const matches = state.users.filter(item => {
       const normalizedName = item.name.toLowerCase();
-      return item.active && item.role === "user" && tokens.length >= 2 && tokens.every(token => normalizedName.includes(token));
+      return item.active && tokens.length >= 2 && tokens.every(token => normalizedName.includes(token));
     });
     if (matches.length === 1) user = matches[0];
   }
@@ -324,7 +324,7 @@ function membershipFor(email: string, state: SharedState | null): Membership | n
 }
 
 function membershipForEmployee(session: EmployeeSession, state: SharedState | null): Membership | null {
-  const user = state?.users.find(item => item.id === session.userId && item.active && item.empNo === session.empNo);
+  const user = state?.users.find(item => (item.id === session.userId || (item.empNo && item.empNo === session.empNo)) && item.active);
   return user ? { name: user.name, email: `EMP No: ${session.empNo}`, role: user.role, displayRole: user.displayRole ?? user.role, displayTitle: user.displayTitle, office: user.office, empNo: session.empNo } : null;
 }
 
@@ -340,7 +340,7 @@ function visibleState(state: SharedState, member: Membership): SharedState {
       ? state.requests.filter(item => item.person === member.name || operational(item.status ?? ""))
       : state.requests.filter(item => item.person === member.name || canApproveRequest(item,member) || operational(item.status ?? ""));
   const requests = withoutDuplicateRequests(visibleRequests);
-  const users = state.users.filter(item=>item.active).map(({authEmail: _authEmail,...user})=>user);
+  const users = state.users.filter(item=>item.active);
   const vehicles = member.role === "admin" ? state.vehicles.filter(officeMatches) : isExecutiveCoordinator(member) ? state.vehicles : [];
   const conversations = state.conversations.filter(item=>item.participants.includes(member.name));
   return { requests, users, offices: state.offices, vehicles, conversations };

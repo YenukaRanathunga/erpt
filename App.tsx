@@ -839,7 +839,16 @@ export default function Home() {
 
   const baseAccount = roleConfig[role];
   const activeAdmin = role === "admin" ? adminAccounts.find(admin => admin.office === adminOffice) : undefined;
-  const account = role === "user" && currentStaff ? { ...baseAccount, name: currentStaff.name, email: `EMP No: ${currentStaff.empNo}`, initials: currentStaff.name.split(" ").map(part => part[0]).slice(0,2).join("") } : activeAdmin ? { ...baseAccount, name: activeAdmin.name, email: activeAdmin.email, initials: activeAdmin.name.split(" ").map(part => part[0]).slice(0,2).join("") } : baseAccount;
+  const realName = currentStaff?.name || (role === "admin" && activeAdmin ? activeAdmin.name : baseAccount.name);
+  const realEmail = currentStaff ? `EMP No: ${currentStaff.empNo}` : (role === "admin" && activeAdmin ? activeAdmin.email : baseAccount.email);
+  const realInitials = realName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  const account = {
+    ...baseAccount,
+    label: baseAccount.label,
+    name: realName,
+    email: realEmail,
+    initials: realInitials,
+  };
   const updateStatus = (id: string, status: string, tone: string) => setRequests(items => items.map(item => item.id === id ? { ...item, status, tone, ...(status === "Approved" ? { approvedBy: account.name, approvedAt: new Date().toISOString() } : {}) } : item));
   const allowedNav = navItems.filter(item => account.views.includes(item.id));
   const approvers = users.filter(user => user.active && (["project_manager", "project_director", "ceo", "head_operations"] as Role[]).includes(user.role));
