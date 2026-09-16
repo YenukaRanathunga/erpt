@@ -270,6 +270,11 @@ const featurePreviewNames: Record<FeaturePreviewRole,string> = {
   ceo_assistant: "Test Executive Coordinator",
   admin: "Test Colombo Admin",
 };
+const featurePreviewApprovers: UserRecord[] = [
+  { id:"PREVIEW-PM", name:featurePreviewNames.project_manager, email:"Sandbox test account", role:"project_manager", office:"Head Office", active:true, position:"Project Manager / Area Approver", project:"Feature Preview" },
+  { id:"PREVIEW-PD", name:featurePreviewNames.project_director, email:"Sandbox test account", role:"project_director", office:"Head Office", active:true, position:"Project Director", project:"Feature Preview" },
+  { id:"PREVIEW-CEO", name:featurePreviewNames.ceo, email:"Sandbox test account", role:"ceo", office:"Head Office", active:true, position:"CEO", project:"Feature Preview" },
+];
 const buildFeaturePreviewRequests = (): RequestItem[] => [
   { id:"TEST-STAFF-001", person:featurePreviewNames.user, route:"Colombo → Kandy", date:"18 Sep", time:"08:00", returnDate:"2026-09-18", returnTime:"17:00", status:"Awaiting approval", tone:"amber", budget:"TEST-STAFF-001", office:"Head Office", requestType:"Field", purpose:"Sandbox staff request for Project Manager approval testing", passengers:[featurePreviewNames.user], createdByRole:"user", awaitingRole:"project_manager", approverRoles:["project_manager"] },
   { id:"TEST-PM-001", person:featurePreviewNames.project_manager, route:"Colombo → Galle", date:"19 Sep", time:"07:00", returnDate:"2026-09-19", returnTime:"18:00", status:"Awaiting approval", tone:"amber", budget:"TEST-PM-001", office:"Head Office", requestType:"Field", purpose:"Sandbox Project Manager request for Project Director approval testing", passengers:[featurePreviewNames.project_manager], createdByRole:"project_manager", awaitingRole:"project_director", approverRoles:["project_director"] },
@@ -1409,7 +1414,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
   const addActiveVehicle = (vehicle: VehicleRecord) => { if (!previewRole) { addVehicle(vehicle); return; } setSandboxVehicles(items=>items.some(item=>item.registration.toLowerCase()===vehicle.registration.toLowerCase())?items:[vehicle,...items]); announce(`${vehicle.registration} added to sandbox fleet.`); };
   const updateActiveVehicle = (id: string, patch: Partial<VehicleRecord>) => { if (!previewRole) { updateVehicle(id,patch); return; } const current=activeVehicles.find(item=>item.id===id); if(!current)return; const updated={...current,...patch}; const oldLabel=vehicleLabel(current); const newLabel=vehicleLabel(updated); setSandboxVehicles(items=>items.map(item=>item.id===id?updated:item)); if(oldLabel!==newLabel)setSandboxRequests(items=>items.map(item=>item.vehicle===oldLabel?{...item,vehicle:newLabel}:item)); };
   const allowedNav = navItems.filter(item => account.views.includes(item.id));
-  const approvers = users.filter(user => user.active && (["project_manager", "project_director", "ceo", "head_operations"] as Role[]).includes(user.role));
+  const approvers = previewRole ? featurePreviewApprovers : users.filter(user => user.active && (["project_manager", "project_director", "ceo", "head_operations"] as Role[]).includes(user.role));
   const accountOffice = previewRole ? (previewRole === "ceo_assistant" ? "CEO Office" : "Head Office") : role === "admin" ? (signedInDirectoryUser?.office ?? adminOffice) : role === "user" && currentStaff ? currentStaff.office : signedInDirectoryUser?.office ?? "Head Office";
   const canAccessReports = activeRole === "admin" || activeRole === "super_admin" || activeRole === "ceo_assistant";
   const canViewAllOffices = activeRole === "super_admin" || (activeRole === "admin" && accountOffice === "Head Office");
