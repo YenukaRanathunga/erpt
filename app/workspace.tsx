@@ -286,6 +286,55 @@ const buildFeaturePreviewRequests = (): RequestItem[] => [
 const requestStatuses = ["Draft", "Awaiting approval", "Approved", "Needs revision", "Trip scheduled", "Completed", "Cancelled"];
 const toneForStatus = (status: string) => status === "Approved" || status === "Completed" ? "green" : status === "Needs revision" || status === "Cancelled" ? "red" : status === "Trip scheduled" ? "blue" : "amber";
 const officeForRequest = (item: RequestItem) => item.office ?? (item.id === "VR-260814-039" ? "Batticaloa Area Office" : item.id === "VR-260813-036" ? "Galle Area Office" : "Head Office");
+const parseTripDate = (dateStr?: string): Date | null => {
+  if (!dateStr) return null;
+  const clean = dateStr.trim();
+  if (!clean) return null;
+  const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const numeric = clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/);
+  if (numeric) return new Date(Number(numeric[3] ?? 2026), Number(numeric[2]) - 1, Number(numeric[1]));
+  const withYear = /\b\d{4}\b/.test(clean) ? clean : `${clean} ${new Date().getFullYear()}`;
+  const parsed = new Date(withYear);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+  return null;
+};
+const isTripDepartureInFuture = (item: RequestItem): boolean => {
+  const dep = parseTripDate(item.date);
+  if (!dep) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dep.getTime() > today.getTime();
+};
+const isTripReturnInFuture = (item: RequestItem): boolean => {
+  const ret = parseTripDate(item.returnDate || item.date);
+  if (!ret) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return ret.getTime() > today.getTime();
+};
+const sanitizeFutureCompleted = (items: RequestItem[]): RequestItem[] => {
+  return items.map(item => {
+    if (item.status === "Completed" && (isTripDepartureInFuture(item) || isTripReturnInFuture(item))) {
+      return {
+        ...item,
+        status: item.tripId ? "Trip scheduled" : "Approved",
+        tone: item.tripId ? "blue" : "green",
+        completedAt: undefined,
+        completedBy: undefined,
+        mileageKm: undefined,
+        finalPriceLkr: undefined,
+        tripCostLkr: undefined,
+        highwayCostLkr: undefined,
+        perDiemCostLkr: undefined,
+        otherCostLkr: undefined,
+      };
+    }
+    return item;
+  });
+};
 const isExecutiveBudgetRequest = (item: Pick<RequestItem,"budget">) => item.budget.trim().toUpperCase().startsWith("CHR");
 const isExecutiveCoordinatorRequest = (item: RequestItem) => isExecutiveBudgetRequest(item) && ["ceo office","test ceo office"].includes(officeForRequest(item).trim().toLowerCase());
 const isHeadOffice = (office: string) => ["head office", "test head office"].includes(office.trim().toLowerCase());
@@ -557,7 +606,10 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
   const passengerCount = (id: string) => { const request=requests.find(item=>item.id===id); return request ? passengerNames(request).length : 0; };
   const totalPassengers = selected.reduce((total,id) => total + passengerCount(id),0);
   const tripTotal = Number(finalPrice) + Number(highwayCost) + Number(perDiemCost) + Number(otherCost);
-  const canCloseTrip = closed || (selected.length > 0 && selected.every(id => merged || requests.find(item => item.id === id)?.status === "Trip scheduled"));
+  const selectedRequests = requests.filter(item => selected.includes(item.id));
+  const hasFutureDepartureSelected = selectedRequests.some(isTripDepartureInFuture);
+  const hasFutureReturnSelected = selectedRequests.some(isTripReturnInFuture);
+  const canCloseTrip = closed || (selected.length > 0 && selected.every(id => merged || requests.find(item => item.id === id)?.status === "Trip scheduled") && !hasFutureReturnSelected);
   const toggleRequest = (id: string) => { setMerged(false); setClosed(false); setSelected(items => items.includes(id) ? items.filter(item => item !== id) : [...items,id]); };
   const addPassengerToApprovedRequest = () => {
     if (!focused || focused.status !== "Approved") return;
@@ -579,6 +631,10 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
     }, 0);
   };
   const createTrip = () => {
+    if (hasFutureDepartureSelected) {
+      announce("Cannot dispatch future journeys ahead of scheduled departure date.");
+      return;
+    }
     selected.forEach(id => {
       const invNo = id.includes("-") ? id.split("-").pop()! : String(Date.now()).slice(-4);
       const tripId = `TR-${invNo}`;
@@ -612,6 +668,10 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
   const printManifest = () => { if (!focused) return; const names=passengerNames(focused); downloadCsv(`${focused.id}-passenger-manifest.csv`,[["Request","Passenger","Role","Status"],...names.map((name,index)=>[focused.id,name,index===0?"Primary requester":focused.externalPassengers?.includes(name)?"Other passenger / Consultant":"Staff passenger","Confirmed"])]); announce("Passenger manifest downloaded."); };
   const closeTrip = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (hasFutureReturnSelected) {
+      announce("Cannot complete a future journey before its scheduled travel date.");
+      return;
+    }
     const totalCost = Number(finalPrice) + Number(highwayCost) + Number(perDiemCost) + Number(otherCost);
     selected.forEach(id => {
       const req = requests.find(item => item.id === id);
@@ -648,7 +708,33 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
     <div className="merge-banner"><div className="merge-symbol"><i/><i/><span>→</span><b/></div><div><p className="eyebrow">OPERATIONAL QUEUE</p><h3>{candidates.length} requests ready for {coordinatorMode ? "executive coordination" : "admin review"}</h3><p>{coordinatorMode ? "Select an approved CHR / CEO budget request and assign its service provider and vehicle type." : "Select requests to merge, or open any request to inspect its full journey and approval details."}</p></div><Status tone="blue">{requests.length} in {coordinatorMode ? "CEO budget" : "office"} scope</Status></div>
     <div className="planning-workspace"><div className="planning-main">
       <section className="panel active-trips-panel"><div className="panel-head"><div><p className="eyebrow">LIVE MOVEMENT</p><h2>Trips out now</h2><p>Dispatched vehicles stay here until the Admin records their return and closes the trip.</p></div><span className="active-trip-count"><i/>{activeTrips.length} out</span></div>
-        {activeTrips.length ? <div className="active-trip-list">{activeTrips.map(item => { const linkedCount = item.tripId ? requests.filter(request => request.status === "Trip scheduled" && request.tripId === item.tripId).length : 1; return <article className={selected.includes(item.id) && merged ? "active" : ""} key={item.tripId ?? item.id}><div className="active-trip-id"><span>{item.incidents?.length ? "REPLACEMENT ACTIVE" : "OUT NOW"}</span><strong>{item.tripId ?? item.id}</strong></div><div><strong>{item.route}</strong><small>{item.date} · {item.time} · {linkedCount} request{linkedCount === 1 ? "" : "s"}</small></div><div><span>SERVICE PROVIDER / TYPE</span><strong>{item.vehicleCompany ?? item.vehicle?.split(" · ")[0] ?? "Provider not recorded"}</strong><small>{item.vehicleType ?? item.vehicle?.split(" · ")[1] ?? "Type not recorded"}</small></div><div className="active-trip-actions"><button className="cancel-active-trip" onClick={() => cancelActiveTrip(item)}>× Cancel trip</button><button className="incident-button" onClick={() => openIncident(item)}>⚠ Breakdown</button><button onClick={() => openActiveTrip(item)}>Enter return details <span>→</span></button></div></article>})}</div> : <div className="active-trip-empty"><span>✓</span><div><strong>No vehicles are currently out</strong><p>Newly dispatched trips will appear here automatically.</p></div></div>}
+        {activeTrips.length ? <div className="active-trip-list">{activeTrips.map(item => {
+          const linkedCount = item.tripId ? requests.filter(request => request.status === "Trip scheduled" && request.tripId === item.tripId).length : 1;
+          const isFutureDep = isTripDepartureInFuture(item);
+          const isFutureRet = isTripReturnInFuture(item);
+          return <article className={selected.includes(item.id) && merged ? "active" : ""} key={item.tripId ?? item.id}>
+            <div className="active-trip-id">
+              <span style={isFutureDep ? { background: "#e0f2fe", color: "#0369a1" } : undefined}>
+                {item.incidents?.length ? "REPLACEMENT ACTIVE" : isFutureDep ? "UPCOMING SCHEDULED" : "OUT NOW"}
+              </span>
+              <strong>{item.tripId ?? item.id}</strong>
+            </div>
+            <div>
+              <strong>{item.route}</strong>
+              <small>{item.date} · {item.time} · {linkedCount} request{linkedCount === 1 ? "" : "s"}</small>
+            </div>
+            <div>
+              <span>SERVICE PROVIDER / TYPE</span>
+              <strong>{item.vehicleCompany ?? item.vehicle?.split(" · ")[0] ?? "Provider not recorded"}</strong>
+              <small>{item.vehicleType ?? item.vehicle?.split(" · ")[1] ?? "Type not recorded"}</small>
+            </div>
+            <div className="active-trip-actions">
+              <button className="cancel-active-trip" onClick={() => cancelActiveTrip(item)}>× Cancel trip</button>
+              <button className="incident-button" disabled={isFutureDep} onClick={() => openIncident(item)}>⚠ Breakdown</button>
+              <button onClick={() => openActiveTrip(item)}>{isFutureRet ? "View setup / upcoming" : "Enter return details"} <span>→</span></button>
+            </div>
+          </article>;
+        })}</div> : <div className="active-trip-empty"><span>✓</span><div><strong>No vehicles are currently out</strong><p>Newly dispatched trips will appear here automatically.</p></div></div>}
       </section>
       <section className="panel trip-queue-panel"><div className="panel-head"><div><h2>Request queue</h2><p>Choose requests and inspect the full operational record before allocation.</p></div><span className="queue-count">{selected.length} selected</span></div>
         <div className="trip-request-list">{candidates.map((item,index) => <article className={`trip-request-card ${focused?.id === item.id ? "focused" : ""} ${selected.includes(item.id) ? "selected" : ""}`} key={item.id}><button className="trip-check" aria-label={`Select ${item.id}`} onClick={() => toggleRequest(item.id)}>{selected.includes(item.id) ? "✓" : ""}</button><span className={`avatar ${index % 2 ? "blue" : "pink"}`}>{item.person.split(" ").map(word=>word[0]).slice(0,2).join("")}</span><div className="trip-card-main"><div><strong>{item.person}</strong><Status tone={item.tone}>{item.status}</Status></div><p>{item.id} · {officeForRequest(item)}</p><b>{item.route}</b></div><div className="trip-card-travel"><span>TRAVEL</span><strong>{item.date} · {item.time}</strong><small>{passengerCount(item.id)} passenger{passengerCount(item.id) === 1 ? "" : "s"}</small></div><button className="details-button" aria-controls="admin-request-full-details" onClick={() => showRequestDetails(item.id)}>View full details <span>→</span></button></article>)}</div>
@@ -676,9 +762,24 @@ function TripPlanning({ requests, vehicles, adminName, onUpdateRequest, onUpdate
       <label><span>Admin notes</span><textarea placeholder="Special requirements, route risks, accommodation or coordination notes" value={adminNotes} onChange={event => setAdminNotes(event.target.value)} /></label>
       {standaloneMode && <div className="demo-note"><span>i</span><p><strong>Standalone mode</strong> — allocate a service provider and vehicle type without linking a request.</p></div>}
       <div className="setup-checks"><p className={vehicle ? "done" : ""}><span>{vehicle ? "✓" : "1"}</span>Provider confirmed</p><p className={vehicleType ? "done" : ""}><span>{vehicleType ? "✓" : "2"}</span>Vehicle type confirmed</p><p className={selected.length >= 1 || standaloneMode ? "done" : ""}><span>{selected.length >= 1 || standaloneMode ? "✓" : "3"}</span>{standaloneMode?"Standalone trip enabled":"Request selected"}</p></div>
-      {merged ? <div className="success-banner"><span>✓</span><div><strong>{standaloneMode?"Standalone trip":"Operational trip"} created</strong><p>Service provider, vehicle type and admin notes were saved.</p></div></div> : <button className="primary wide create-trip-button" disabled={(!selected.length && !standaloneMode) || !vehicle || !vehicleType} onClick={createTrip}>Create {standaloneMode?"standalone":"operational"} trip <span>→</span></button>}
+      {hasFutureDepartureSelected && (
+        <div className="demo-note" style={{ borderLeft: "3px solid #ef4444", background: "#fef2f2", padding: "10px 14px", borderRadius: "6px", margin: "10px 0", color: "#991b1b" }}>
+          <span>⏳</span>
+          <p><strong>Cannot Dispatch Future Journey</strong><br/>
+          Selected journey is scheduled for departure on {selectedRequests.map((r: RequestItem) => r.date).join(", ")}. In this live tracking system, vehicles can only be dispatched on or after the scheduled departure date.</p>
+        </div>
+      )}
+      {merged ? <div className="success-banner"><span>✓</span><div><strong>{standaloneMode?"Standalone trip":"Operational trip"} created</strong><p>Service provider, vehicle type and admin notes were saved.</p></div></div> : <button className="primary wide create-trip-button" disabled={(!selected.length && !standaloneMode) || !vehicle || !vehicleType || hasFutureDepartureSelected} onClick={createTrip}>{hasFutureDepartureSelected ? "Cannot dispatch future journey" : `Create ${standaloneMode ? "standalone" : "operational"} trip`} <span>→</span></button>}
       <section className={`incident-control ${selected.some(id=>requests.find(item=>item.id===id)?.status === "Trip scheduled") ? "available" : ""}`}><div className="incident-head"><span>⚠</span><div><strong>Mid-trip incident & replacement</strong><p>Record a breakdown or other incident while a vehicle is out, then assign the replacement.</p></div>{!incidentOpen && <button disabled={!selected.some(id=>requests.find(item=>item.id===id)?.status === "Trip scheduled")} onClick={()=>setIncidentOpen(true)}>Report incident</button>}</div>{focused?.incidents?.length ? <div className="incident-history"><strong>{focused.incidents.length} incident{focused.incidents.length===1?"":"s"} recorded</strong><span>Latest: {focused.incidents.at(-1)?.id} · {focused.incidents.at(-1)?.replacementVehicle}</span></div> : null}{incidentOpen && <form className="incident-form" onSubmit={saveIncident}><div className="incident-grid"><label><span>Incident date & time *</span><input type="datetime-local" value={incidentAt} onChange={event=>setIncidentAt(event.target.value)} required /></label><label><span>Breakdown location *</span><input value={incidentLocation} onChange={event=>setIncidentLocation(event.target.value)} placeholder="Example: Mawanella, A1 road" required /></label><label className="wide"><span>Fault / incident details *</span><textarea value={incidentIssue} onChange={event=>setIncidentIssue(event.target.value)} placeholder="Describe what happened and the vehicle condition" required /></label><label><span>Replacement vehicle *</span><select value={replacementVehicle} onChange={event=>setReplacementVehicle(event.target.value)} required><option value="" disabled>Select replacement vehicle</option>{replacementVehicles.map(item=><option key={item.id} value={vehicleLabel(item)}>{vehicleLabel(item)} · {item.office}</option>)}</select></label><label><span>Replacement driver</span><select value={replacementDriver} onChange={event=>setReplacementDriver(event.target.value)}><option value="">Keep current driver</option><option>Sunil Rathnayake · +94 77 318 4402</option><option>Mohamed Irfan · +94 76 552 0911</option><option>Chamara Silva · +94 71 884 2106</option></select></label><label className="wide"><span>Action taken / recovery notes</span><textarea value={incidentAction} onChange={event=>setIncidentAction(event.target.value)} placeholder="Recovery arranged, passengers transferred, garage informed..." /></label></div><div className="incident-form-actions"><button type="button" className="secondary" onClick={()=>setIncidentOpen(false)}>Cancel</button><button type="submit" className="incident-save">Save incident & activate replacement</button></div></form>}</section>
-      <section className={`trip-closure ${canCloseTrip ? "ready" : ""}`}><div className="closure-head"><span>↙</span><div><strong>Return details & close trip</strong><p>Enter mileage and every cost item. The full total is calculated automatically for Reports.</p></div></div>{canCloseTrip && (closed ? <div className="closure-success"><span>✓</span><div><strong>Mileage and full cost saved to reports</strong><p>{mileage} km · Total LKR {tripTotal.toLocaleString()} · {completedAt}</p></div></div> : <form onSubmit={closeTrip}><div className="closure-grid"><label><span>Actual mileage (km) *</span><input type="number" min="1" value={mileage} onChange={event => setMileage(event.target.value)} required /></label><label><span>Trip / vehicle cost (LKR) *</span><input type="number" min="0" value={finalPrice} onChange={event => setFinalPrice(event.target.value)} required /></label><label><span>Highway cost (LKR)</span><input type="number" min="0" value={highwayCost} onChange={event => setHighwayCost(event.target.value)} placeholder="0" /></label><label><span>Per diem (LKR)</span><input type="number" min="0" value={perDiemCost} onChange={event => setPerDiemCost(event.target.value)} placeholder="0" /></label><label><span>Other cost (LKR)</span><input type="number" min="0" value={otherCost} onChange={event => setOtherCost(event.target.value)} placeholder="0" /></label><label><span>Completion date *</span><input type="date" value={completedAt} onChange={event => setCompletedAt(event.target.value)} required /></label><label><span>Receipt / voucher reference</span><input value={receiptRef} placeholder="PV-2026-0081" onChange={event => setReceiptRef(event.target.value)} /></label></div><div className="cost-total-preview"><span>Full trip cost</span><strong>LKR {tripTotal.toLocaleString()}</strong><small>Trip + Highway + Per diem + Other</small></div><label><span>Completion notes</span><textarea value={completionNotes} placeholder="Journey completed safely, delays, route changes or vehicle observations" onChange={event => setCompletionNotes(event.target.value)} /></label><button className="close-trip-button" type="submit">✓ Save actuals & complete trip</button></form>)}</section>
+      <section className={`trip-closure ${canCloseTrip ? "ready" : ""}`}><div className="closure-head"><span>↙</span><div><strong>Return details & close trip</strong><p>Enter mileage and every cost item. The full total is calculated automatically for Reports.</p></div></div>
+      {selected.length > 0 && hasFutureReturnSelected && (
+        <div className="demo-note" style={{ borderLeft: "3px solid #f59e0b", background: "#fffbeb", padding: "10px 14px", borderRadius: "6px", margin: "10px 0" }}>
+          <span>⏳</span>
+          <p><strong>Future Journey — Return Entry Locked</strong><br/>
+          Scheduled departure: {selectedRequests.map((r: RequestItem) => r.date).join(", ")} {selectedRequests.some((r: RequestItem) => r.returnDate) ? `(Expected Return: ${selectedRequests.map((r: RequestItem) => r.returnDate).filter(Boolean).join(", ")})` : ""}. In this live fleet system, actual return mileage and costs can only be entered after the journey has physically occurred.</p>
+        </div>
+      )}
+      {canCloseTrip && (closed ? <div className="closure-success"><span>✓</span><div><strong>Mileage and full cost saved to reports</strong><p>{mileage} km · Total LKR {tripTotal.toLocaleString()} · {completedAt}</p></div></div> : <form onSubmit={closeTrip}><div className="closure-grid"><label><span>Actual mileage (km) *</span><input type="number" min="1" value={mileage} onChange={event => setMileage(event.target.value)} required /></label><label><span>Trip / vehicle cost (LKR) *</span><input type="number" min="0" value={finalPrice} onChange={event => setFinalPrice(event.target.value)} required /></label><label><span>Highway cost (LKR)</span><input type="number" min="0" value={highwayCost} onChange={event => setHighwayCost(event.target.value)} placeholder="0" /></label><label><span>Per diem (LKR)</span><input type="number" min="0" value={perDiemCost} onChange={event => setPerDiemCost(event.target.value)} placeholder="0" /></label><label><span>Other cost (LKR)</span><input type="number" min="0" value={otherCost} onChange={event => setOtherCost(event.target.value)} placeholder="0" /></label><label><span>Completion date *</span><input type="date" max={new Date().toISOString().slice(0, 10)} value={completedAt} onChange={event => setCompletedAt(event.target.value)} required /></label><label><span>Receipt / voucher reference</span><input value={receiptRef} placeholder="PV-2026-0081" onChange={event => setReceiptRef(event.target.value)} /></label></div><div className="cost-total-preview"><span>Full trip cost</span><strong>LKR {tripTotal.toLocaleString()}</strong><small>Trip + Highway + Per diem + Other</small></div><label><span>Completion notes</span><textarea value={completionNotes} placeholder="Journey completed safely, delays, route changes or vehicle observations" onChange={event => setCompletionNotes(event.target.value)} /></label><button className="close-trip-button" type="submit">✓ Save actuals & complete trip</button></form>)}</section>
     </aside></div>
   </>; 
 }
@@ -1169,7 +1270,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
     let retryTimer: number | undefined;
     const applyShared = (state: SharedState, membership: Membership, firstLoad = false) => {
       applyingRemoteRef.current = true;
-      setRequests(state.requests.map(item => ({ ...item, office: officeForRequest(item), awaitingRole: item.awaitingRole ?? "project_manager" })));
+      setRequests(sanitizeFutureCompleted(state.requests).map(item => ({ ...item, office: officeForRequest(item), awaitingRole: item.awaitingRole ?? "project_manager" })));
       setUsers(state.users);
       setOffices(state.offices);
       setVehicles(state.vehicles);
@@ -1198,7 +1299,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
           };
           const cachedUsers = readCache<UserRecord[]>("chrysalis-users", initialUsers).map(user => user.id === "USR-001" ? { ...user, authEmail: "yenukaadarsha93@gmail.com", protected: true } : user);
           const seed: SharedState = {
-            requests: readCache<RequestItem[]>("chrysalis-requests", initialRequests),
+            requests: sanitizeFutureCompleted(readCache<RequestItem[]>("chrysalis-requests", initialRequests)),
             users: [...cachedUsers, ...initialUsers.filter(seedUser => !cachedUsers.some(user => user.id === seedUser.id))],
             offices: [...new Set([...readCache<string[]>("chrysalis-offices", initialOffices), ...initialOffices])],
             vehicles: readCache<VehicleRecord[]>("chrysalis-vehicles", initialVehicles),
@@ -1268,7 +1369,7 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
             conversations: data.state.conversations ?? [],
           });
           applyingRemoteRef.current = true;
-          setRequests(data.state.requests);
+          setRequests(sanitizeFutureCompleted(data.state.requests).map(item => ({ ...item, office: officeForRequest(item), awaitingRole: item.awaitingRole ?? "project_manager" })));
           setUsers(data.state.users);
           setOffices(data.state.offices);
           setVehicles(data.state.vehicles);

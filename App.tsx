@@ -220,6 +220,55 @@ const editableRoles: Role[] = ["user", "project_manager", "project_director", "c
 const requestStatuses = ["Draft", "Awaiting approval", "Approved", "Needs revision", "Trip scheduled", "Completed", "Cancelled"];
 const toneForStatus = (status: string) => status === "Approved" || status === "Completed" ? "green" : status === "Needs revision" || status === "Cancelled" ? "red" : status === "Trip scheduled" ? "blue" : "amber";
 const officeForRequest = (item: RequestItem) => item.office ?? (item.id === "VR-260814-039" ? "Batticaloa Area Office" : item.id === "VR-260813-036" ? "Galle Area Office" : "Head Office");
+const parseTripDate = (dateStr?: string): Date | null => {
+  if (!dateStr) return null;
+  const clean = dateStr.trim();
+  if (!clean) return null;
+  const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const numeric = clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/);
+  if (numeric) return new Date(Number(numeric[3] ?? 2026), Number(numeric[2]) - 1, Number(numeric[1]));
+  const withYear = /\b\d{4}\b/.test(clean) ? clean : `${clean} ${new Date().getFullYear()}`;
+  const parsed = new Date(withYear);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+  return null;
+};
+const isTripDepartureInFuture = (item: RequestItem): boolean => {
+  const dep = parseTripDate(item.date);
+  if (!dep) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dep.getTime() > today.getTime();
+};
+const isTripReturnInFuture = (item: RequestItem): boolean => {
+  const ret = parseTripDate(item.returnDate || item.date);
+  if (!ret) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return ret.getTime() > today.getTime();
+};
+const sanitizeFutureCompleted = (items: RequestItem[]): RequestItem[] => {
+  return items.map(item => {
+    if (item.status === "Completed" && (isTripDepartureInFuture(item) || isTripReturnInFuture(item))) {
+      return {
+        ...item,
+        status: item.tripId ? "Trip scheduled" : "Approved",
+        tone: item.tripId ? "blue" : "green",
+        completedAt: undefined,
+        completedBy: undefined,
+        mileageKm: undefined,
+        finalPriceLkr: undefined,
+        tripCostLkr: undefined,
+        highwayCostLkr: undefined,
+        perDiemCostLkr: undefined,
+        otherCostLkr: undefined,
+      };
+    }
+    return item;
+  });
+};
 const approvalRoleFor = (requesterRole: Role, office: string): ApprovalRole => requesterRole === "project_manager" ? "project_director" : requesterRole === "project_director" || requesterRole === "head_operations" ? "ceo" : requesterRole === "admin" && office === "Head Office" ? "head_operations" : "project_manager";
 const notificationsFor = (role: Role, accountName: string, accountOffice: string, requests: RequestItem[]): NotificationItem[] => {
   if ((["project_manager", "project_director", "ceo", "head_operations"] as Role[]).includes(role)) {

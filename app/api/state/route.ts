@@ -31,6 +31,62 @@ const EXECUTIVE_ASSIGNMENT_FIELDS = ["tone","tripId","vehicle","vehicleCompany",
 const isExecutiveCoordinator = (member: Pick<Membership,"role" | "empNo">) => member.role === "ceo_assistant" && member.empNo === EXECUTIVE_COORDINATOR_EMPLOYEE_NUMBER;
 const isExecutiveBudgetRequest = (item: Item) => String(item.budget ?? "").trim().toUpperCase().startsWith("CHR");
 
+const parseTripDate = (dateStr?: unknown): Date | null => {
+  if (typeof dateStr !== "string") return null;
+  const clean = dateStr.trim();
+  if (!clean) return null;
+  const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const numeric = clean.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?$/);
+  if (numeric) return new Date(Number(numeric[3] ?? 2026), Number(numeric[2]) - 1, Number(numeric[1]));
+  const withYear = /\b\d{4}\b/.test(clean) ? clean : `${clean} ${new Date().getFullYear()}`;
+  const parsed = new Date(withYear);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+  return null;
+};
+
+const isTripDepartureInFuture = (item: Item): boolean => {
+  const dep = parseTripDate(item.date);
+  if (!dep) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return dep.getTime() > today.getTime();
+};
+
+const isTripReturnInFuture = (item: Item): boolean => {
+  const ret = parseTripDate(item.returnDate || item.date);
+  if (!ret) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return ret.getTime() > today.getTime();
+};
+
+const sanitizeFutureCompletedRequests = (items: Item[]): Item[] => {
+  return items.map(item => {
+    if (item.status === "Completed" && (isTripDepartureInFuture(item) || isTripReturnInFuture(item))) {
+      const sanitized = {
+        ...item,
+        status: item.tripId ? "Trip scheduled" : "Approved",
+        tone: item.tripId ? "blue" : "green",
+      };
+      const rec = sanitized as Record<string, unknown>;
+      delete rec.completedAt;
+      delete rec.completedBy;
+      delete rec.mileageKm;
+      delete rec.finalPriceLkr;
+      delete rec.tripCostLkr;
+      delete rec.highwayCostLkr;
+      delete rec.perDiemCostLkr;
+      delete rec.otherCostLkr;
+      return sanitized;
+    }
+    return item;
+  });
+};
+
+
 function mergeExecutiveAssignment(current: Item, incoming: Item, member: Membership): Item | null {
   if (!isExecutiveCoordinator(member) || !isExecutiveBudgetRequest(current) || current.status !== "Approved" || incoming.status !== "Trip scheduled") return null;
   const update: Item = { ...current };
@@ -298,7 +354,26 @@ function mergeAuthorized(current: SharedState, incoming: SharedState, member: Me
   let requests = current.requests.map(item => {
     const next = incomingById.get(item.id);
     if (!next) return item;
-    if (member.role === "admin" && officeMatches(item)) return next;
+    if (member.role === "admin" && officeMatches(item)) {
+      if (next.status === "Completed" && (isTripDepartureInFuture(next) || isTripReturnInFuture(next))) {
+        const sanitized = {
+          ...next,
+          status: item.status === "Trip scheduled" ? "Trip scheduled" : "Approved",
+          tone: item.status === "Trip scheduled" ? "blue" : "green",
+        };
+        const rec = sanitized as Record<string, unknown>;
+        delete rec.completedAt;
+        delete rec.completedBy;
+        delete rec.mileageKm;
+        delete rec.finalPriceLkr;
+        delete rec.tripCostLkr;
+        delete rec.highwayCostLkr;
+        delete rec.perDiemCostLkr;
+        delete rec.otherCostLkr;
+        return sanitized;
+      }
+      return next;
+    }
     const passengerNames = Array.isArray(item.passengers) ? item.passengers.filter(name=>typeof name === "string") : [];
     const canMessage = item.person === member.name || passengerNames.includes(member.name) || canApproveRequest(item,member);
     const withMessages = appendAuthorizedMessages(item,next,member,Boolean(canMessage));
