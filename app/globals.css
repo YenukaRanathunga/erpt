@@ -3701,3 +3701,5 @@ label.search > input::placeholder {
 
 @media(max-width:1000px){.feature-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.feature-preview-bar{align-items:flex-start;flex-wrap:wrap}.feature-preview-bar>div{min-width:100%}}
 @media(max-width:700px){.feature-preview-grid{grid-template-columns:1fr}.feature-preview-heading{align-items:flex-start;flex-wrap:wrap}.feature-preview-heading>b{margin-left:57px}.feature-preview-flow{align-items:flex-start;flex-direction:column}.feature-preview-flow i{transform:rotate(90deg);margin-left:10px}.feature-preview-bar{top:68px;padding:10px 15px}.feature-preview-bar label{width:100%;align-items:flex-start;flex-direction:column}.feature-preview-bar select{width:100%}.feature-preview-bar>button{width:100%}}
+.feature-preview-bar .feature-preview-office select{width:190px}
+@media(max-width:700px){.feature-preview-bar .feature-preview-office select{width:100%}}
