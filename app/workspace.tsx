@@ -85,6 +85,7 @@ type RequestItem = {
   cancelledAt?: string;
   cancelledBy?: string;
   cancellationReason?: string;
+  activityAt?: string;
   createdByRole?: Role;
   awaitingRole?: ApprovalRole;
   approverNames?: string[];
@@ -926,10 +927,13 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, sandboxMode
   const canRequesterRevise = Boolean(selectedRequest && selectedRequest.person===currentUser && selectedRequest.status==="Needs revision");
   useEffect(() => {
     if (!sandboxMode) return;
+    const latestActivity = [...requests]
+      .filter(item=>item.status!=="Draft" && Boolean(item.activityAt))
+      .sort((a,b)=>new Date(b.activityAt ?? 0).getTime()-new Date(a.activityAt ?? 0).getTime())[0];
     const latestOperational = [...requests]
       .filter(item=>Boolean(item.tripId) && (item.status === "Trip scheduled" || item.status === "Completed"))
       .sort((a,b)=>new Date(b.dispatchedAt ?? 0).getTime()-new Date(a.dispatchedAt ?? 0).getTime())[0];
-    const targetRequest = latestOperational ?? requests.find(item=>item.person===currentUser && item.status!=="Draft");
+    const targetRequest = latestActivity ?? requests.find(item=>item.person===currentUser && item.status!=="Draft") ?? latestOperational;
     if (!targetRequest) return;
     const targetDate = parseRequestDate(targetRequest.date);
     if (!targetDate) return;
@@ -1602,9 +1606,9 @@ export default function Workspace({ viewerEmail, viewerName }: { viewerEmail: st
     initials: realInitials,
   };
   const mutateActiveRequests = (updater: (items: RequestItem[]) => RequestItem[]) => { if (previewRole) setSandboxRequests(updater); else setRequests(updater); };
-  const updateActiveRequest = (id: string, patch: Partial<RequestItem>) => mutateActiveRequests(items=>items.map(item=>item.id===id?{...item,...patch}:item));
-  const createActiveRequest = (request: RequestItem) => mutateActiveRequests(items=>[request,...items]);
-  const updateStatus = (id: string, status: string, tone: string, comment?: string) => mutateActiveRequests(items => items.map(item => item.id === id ? { ...item, status, tone, decisionComment:comment, decisionBy:account.name, decisionAt:new Date().toISOString(), ...(status === "Approved" ? { approvedBy: account.name, approvedAt: new Date().toISOString() } : {}) } : item));
+  const updateActiveRequest = (id: string, patch: Partial<RequestItem>) => { const activityAt=previewRole?new Date().toISOString():undefined; mutateActiveRequests(items=>items.map(item=>item.id===id?{...item,...patch,...(activityAt?{activityAt}:{})}:item)); };
+  const createActiveRequest = (request: RequestItem) => { const activityAt=previewRole?new Date().toISOString():undefined; mutateActiveRequests(items=>[{...request,...(activityAt?{activityAt}:{})},...items]); };
+  const updateStatus = (id: string, status: string, tone: string, comment?: string) => { const changedAt=new Date().toISOString(); mutateActiveRequests(items => items.map(item => item.id === id ? { ...item, status, tone, decisionComment:comment, decisionBy:account.name, decisionAt:changedAt, ...(previewRole?{activityAt:changedAt}:{}), ...(status === "Approved" ? { approvedBy: account.name, approvedAt: changedAt } : {}) } : item)); };
   const addActiveVehicle = (vehicle: VehicleRecord) => { if (!previewRole) { addVehicle(vehicle); return; } setSandboxVehicles(items=>items.some(item=>item.registration.toLowerCase()===vehicle.registration.toLowerCase())?items:[vehicle,...items]); announce(`${vehicle.registration} added to sandbox fleet.`); };
   const updateActiveVehicle = (id: string, patch: Partial<VehicleRecord>) => { if (!previewRole) { updateVehicle(id,patch); return; } const current=activeVehicles.find(item=>item.id===id); if(!current)return; const updated={...current,...patch}; const oldLabel=vehicleLabel(current); const newLabel=vehicleLabel(updated); setSandboxVehicles(items=>items.map(item=>item.id===id?updated:item)); if(oldLabel!==newLabel)setSandboxRequests(items=>items.map(item=>item.vehicle===oldLabel?{...item,vehicle:newLabel}:item)); };
   const allowedNav = navItems.filter(item => account.views.includes(item.id));
