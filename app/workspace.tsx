@@ -927,9 +927,10 @@ function TripCalendar({ requests, currentUser, approvedOnly = false, sandboxMode
   const canRequesterRevise = Boolean(selectedRequest && selectedRequest.person===currentUser && selectedRequest.status==="Needs revision");
   useEffect(() => {
     if (!sandboxMode) return;
+    const activityTime = (item: RequestItem) => item.activityAt ?? item.completedAt ?? item.decisionAt ?? item.dispatchedAt ?? item.approvedAt;
     const latestActivity = [...requests]
-      .filter(item=>item.status!=="Draft" && Boolean(item.activityAt))
-      .sort((a,b)=>new Date(b.activityAt ?? 0).getTime()-new Date(a.activityAt ?? 0).getTime())[0];
+      .filter(item=>item.status!=="Draft" && Boolean(activityTime(item)))
+      .sort((a,b)=>new Date(activityTime(b) ?? 0).getTime()-new Date(activityTime(a) ?? 0).getTime())[0];
     const latestOperational = [...requests]
       .filter(item=>Boolean(item.tripId) && (item.status === "Trip scheduled" || item.status === "Completed"))
       .sort((a,b)=>new Date(b.dispatchedAt ?? 0).getTime()-new Date(a.dispatchedAt ?? 0).getTime())[0];
